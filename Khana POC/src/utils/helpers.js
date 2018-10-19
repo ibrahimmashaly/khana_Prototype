@@ -1,7 +1,6 @@
 import React from 'react';
 import { CopyToClipboard } from 'react-copy-to-clipboard';
-import { FaCopy, FaCheck } from 'react-icons/fa';
-import { IconContext } from "react-icons";
+import { Icon } from 'evergreen-ui';
 
 export let endPoints = {
     blockExplorer: "https://rinkeby.etherscan.io/",
@@ -20,9 +19,7 @@ export function shortenAddress(address, callback) {
         }}>
 
         <span>
-            <IconContext.Provider value={{ color: "gray", size: 14, className: "global-class-name" }}>
-                <a href={endPoints.blockExplorer + "address/" + address} target="_blank">{shortAddress}</a>  <FaCopy />
-            </IconContext.Provider>
+            <a href={endPoints.blockExplorer + "address/" + address} target="_blank">{shortAddress}</a>  <Icon icon="clipboard" />
         </span>
             
     </CopyToClipboard >
