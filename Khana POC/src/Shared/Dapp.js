@@ -4,9 +4,9 @@ import '../App.css'
 import React, { Component } from 'react';
 import Navigation from './Navigation';
 import UserDashboard from './UserDashboard';
-import TokenInformation from './TokenInformation';
-import Admin from './Admin';
-import Notifications from './Notifications';
+// import TokenInformation from './TokenInformation';
+// import Admin from './Admin';
+// import Notifications from './Notifications';
 
 class Dapp extends Component {
 
@@ -89,45 +89,17 @@ class Dapp extends Component {
                         updateStaticState={this.updateStaticState}
                     />
 
-                    <main className="container">
-                        { /* User dashboard section */}
-                        {this.state.navigation === 0 &&
-                            <UserDashboard
-                                user={this.state.user}
-                                contract={this.state.contract}
-                                web3={this.state.web3}
-                                updateStaticState={this.updateStaticState}
-                                updateState={this.updateState}
-                                updateLoadingMessage={this.updateLoadingMessage}
-                            />
-                        }
-
-                        { /* Token information section */}
-                        {this.state.navigation === 1 &&
-                            <TokenInformation
-                                contract={this.state.contract}
-                                updateLoadingMessage={this.updateLoadingMessage}
-                                updateStaticState={this.updateStaticState}
-                                updateState={this.updateState}
-                            />
-                        }
-
-                        { /* Admin section */}
-                        {this.state.navigation === 2 &&
-                            <Admin
-                                state={this.state}
-                                updateState={this.updateState}
-                                updateLoadingMessage={this.updateLoadingMessage}
-                            />
-                        }
-
-                        <Notifications
-                            state={this.state}
-                            message={this.state.app.status}
+                    {this.state.navigation === 0 &&
+                        <UserDashboard
+                            user={this.state.user}
+                            contract={this.state.contract}
+                            web3={this.state.web3}
                             updateStaticState={this.updateStaticState}
+                            updateState={this.updateState}
+                            updateLoadingMessage={this.updateLoadingMessage}
                         />
-
-                    </main>
+                    }
+                    
                 </div >
             ) }
             </div>
@@ -136,3 +108,46 @@ class Dapp extends Component {
 }
 
 export default Dapp
+
+
+
+
+                    //     <main className="container">
+                    //     { /* User dashboard section */}
+                    //     {this.state.navigation === 0 &&
+                    //         <UserDashboard
+                    //             user={this.state.user}
+                    //             contract={this.state.contract}
+                    //             web3={this.state.web3}
+                    //             updateStaticState={this.updateStaticState}
+                    //             updateState={this.updateState}
+                    //             updateLoadingMessage={this.updateLoadingMessage}
+                    //         />
+                    //     }
+
+                    //     { /* Token information section */}
+                    //     {this.state.navigation === 1 &&
+                    //         <TokenInformation
+                    //             contract={this.state.contract}
+                    //             updateLoadingMessage={this.updateLoadingMessage}
+                    //             updateStaticState={this.updateStaticState}
+                    //             updateState={this.updateState}
+                    //         />
+                    //     }
+
+                    //     { /* Admin section */}
+                    //     {this.state.navigation === 2 &&
+                    //         <Admin
+                    //             state={this.state}
+                    //             updateState={this.updateState}
+                    //             updateLoadingMessage={this.updateLoadingMessage}
+                    //         />
+                    //     }
+
+                    //     <Notifications
+                    //         state={this.state}
+                    //         message={this.state.app.status}
+                    //         updateStaticState={this.updateStaticState}
+                    //     />
+
+                    // </main>

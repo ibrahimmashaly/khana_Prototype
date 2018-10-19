@@ -1,8 +1,7 @@
 import React, { Component } from 'react'
 import {shortenAddress} from '../utils/helpers';
 
-import Grid from '@material-ui/core/Grid';
-import Button from '@material-ui/core/Button';
+import { Pane } from 'evergreen-ui';
 
 
 class UserDashboard extends Component {
@@ -48,47 +47,51 @@ class UserDashboard extends Component {
     render() {
         
         return (
-            <Grid container spacing={8}>
-                <Grid item md>
-                    <Grid container justify="flex-start" spacing={16}>
-                        <Grid key={0} item>
-                            <h4>My information</h4>
-                            <p>My address: {shortenAddress(this.props.user.currentAddress, this.props.updateState)}<br />
-                            My balance: {this.props.user.tokenBalance}  {this.props.contract.tokenSymbol}<br />
-                            I have {((this.props.user.tokenBalance / this.props.contract.totalSupply) * 100).toFixed(2)}% of the supply</p>
-                        </Grid>
-                    </Grid>
+            <Pane padding={16} background="tint1" flex="1">
+                test pane
+            </Pane>
 
-                    <Grid container justify="flex-start" spacing={16}>
-                        <Grid key={0} item>
-                            <h4>Token Information</h4>
-                            <p>{this.props.contract.tokenName} contract address: {shortenAddress(this.props.contract.address, this.props.updateState)}<br />
-                                Total supply: {this.props.contract.totalSupply} {this.props.contract.tokenSymbol}</p>
-                            {this.props.contract.fundsInstance &&
-                                <p>Bonding curve address: {shortenAddress(this.props.contract.fundsInstance.address, this.props.updateState)}<br />
-                                    ETH in bonding curve: {this.props.contract.ethAmount} ETH</p>
-                            }
-                        </Grid>
-                    </Grid>
+            // <Grid container spacing={8}>
+            //     <Grid item md>
+            //         <Grid container justify="flex-start" spacing={16}>
+            //             <Grid key={0} item>
+            //                 <h4>My information</h4>
+            //                 <p>My address: {shortenAddress(this.props.user.currentAddress, this.props.updateState)}<br />
+            //                 My balance: {this.props.user.tokenBalance}  {this.props.contract.tokenSymbol}<br />
+            //                 I have {((this.props.user.tokenBalance / this.props.contract.totalSupply) * 100).toFixed(2)}% of the supply</p>
+            //             </Grid>
+            //         </Grid>
 
-                    {this.props.user.tokenBalance > 0 &&
-                        <Grid container justify="flex-start" spacing={16}>
-                            <Grid key={0} item>
-                                <h4>Sell my tokens</h4>
-                                <p>Sell your tokens to the bonding curve below</p>
-                                <form onSubmit={this.sellTokens} id="contained-button-submit">
-                                    <label htmlFor="contained-button-submit"> Amount of {this.props.contract.tokenSymbol} to sell: <br />
-                                        <input type="text" name="amount" />
-                                    </label>
-                                    <Button variant="outlined" color="primary" size="small" type="submit">Sell tokens</Button>
-                                </form>
-                                <p></p>
-                            </Grid>
-                        </Grid>
-                    }
+            //         <Grid container justify="flex-start" spacing={16}>
+            //             <Grid key={0} item>
+            //                 <h4>Token Information</h4>
+            //                 <p>{this.props.contract.tokenName} contract address: {shortenAddress(this.props.contract.address, this.props.updateState)}<br />
+            //                     Total supply: {this.props.contract.totalSupply} {this.props.contract.tokenSymbol}</p>
+            //                 {this.props.contract.fundsInstance &&
+            //                     <p>Bonding curve address: {shortenAddress(this.props.contract.fundsInstance.address, this.props.updateState)}<br />
+            //                         ETH in bonding curve: {this.props.contract.ethAmount} ETH</p>
+            //                 }
+            //             </Grid>
+            //         </Grid>
+
+            //         {this.props.user.tokenBalance > 0 &&
+            //             <Grid container justify="flex-start" spacing={16}>
+            //                 <Grid key={0} item>
+            //                     <h4>Sell my tokens</h4>
+            //                     <p>Sell your tokens to the bonding curve below</p>
+            //                     <form onSubmit={this.sellTokens} id="contained-button-submit">
+            //                         <label htmlFor="contained-button-submit"> Amount of {this.props.contract.tokenSymbol} to sell: <br />
+            //                             <input type="text" name="amount" />
+            //                         </label>
+            //                         <Button variant="outlined" color="primary" size="small" type="submit">Sell tokens</Button>
+            //                     </form>
+            //                     <p></p>
+            //                 </Grid>
+            //             </Grid>
+            //         }
                     
-                </Grid>
-            </Grid>
+            //     </Grid>
+            // </Grid>
         )
     }
 }
