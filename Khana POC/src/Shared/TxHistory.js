@@ -12,14 +12,6 @@ import TableCell from '@material-ui/core/TableCell';
 import TableBody from '@material-ui/core/TableBody';
 
 class TxHistory extends Component {
-
-    constructor(props) {
-        super(props)
-
-        this.state = {
-            reasonsLoaded: false
-        }
-    }
     
     getIpfsReasons = async (ipfsHash) => {
         this.props.updateLoadingMessage('Loading IPFS reasons...')
@@ -38,17 +30,15 @@ class TxHistory extends Component {
             })
             this.props.updateStaticState({ contract: contractState })
             this.props.updateState('IPFS reasons loaded')
-            this.setState({ reasonsLoaded: true })
         })
-
     }
 
     render() {
-        const sortedTxList = this.props.contract.ipfsLogHistory.sort((a, b) => {
+        let sortedTxList = this.props.contract.ipfsLogHistory.sort((a, b) => {
             return a.blockNumber < b.blockNumber ? 1 : -1
         })
-        
-        const transactionList = sortedTxList.map(tx => {
+
+        let transactionList = sortedTxList.map(tx => {
             if (tx.minter == null) { return null }
             return (
                 <TableRow key={tx.ethTxHash} hover>
@@ -61,18 +51,20 @@ class TxHistory extends Component {
                     {tx.reason != null ? (
                         <TableCell>{tx.reason}</TableCell>
                     ) : (
-                        <TableCell><a href={endPoints.ipfsEndpoint + tx.ipfsHash} target="_blank">Raw Log</a></TableCell>
-                    )
+                            <TableCell><a href={endPoints.ipfsEndpoint + tx.ipfsHash} target="_blank">Raw Log</a></TableCell>
+                        )
                     }
                 </TableRow>
             )
         })
 
+        let reasonsLoaded = sortedTxList[0].reason != null
+
         return (
             <div>
             { this.props.contract.latestIpfsHash &&
                 <Grid key={0} item xs={8} sm={10} md={12}>
-                    {this.state.reasonsLoaded === false &&
+                    {reasonsLoaded === false &&
                         <Button variant="outlined" size="small" onClick={this.getIpfsReasons}>Load minting reasons</Button>
                     }
                     <Button variant="outlined" size="small" href={endPoints.ipfsEndpoint + sortedTxList[0].ipfsHash} target="_blank">Get latest raw log</Button>

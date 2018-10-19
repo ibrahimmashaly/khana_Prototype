@@ -16,7 +16,7 @@ const contractDeployBlockNumber = 3009499   // KHNA Rinkeby deployment block
 // Shared components
 //
 
-import TokenSetup from './Shared/_tokenSetup';
+import TokenShared from './Shared/_tokenShared';
 import Navigation from './Shared/Navigation';
 import UserDashboard from './Shared/UserDashboard';
 import TokenInformation from './Shared/TokenInformation';
@@ -43,142 +43,123 @@ class App extends Component {
     constructor(props) {
         super(props)
 
+        this.state = { app: { status: "", isLoading: true } }
         const contract = require('truffle-contract')
         this.tokenContract = contract(BlockDamToken)
         this.bondingCurveContract = contract(BondingCurveFunds)
     }
 
     async componentWillMount() {
-
         // Setup default state values
-        let defaultState = await TokenSetup.setupDefaultState()
+        let defaultState = await TokenShared.setupDefaultState()
         this.setState(defaultState)
 
         // Setup web3 instance
-        let web3Instance = await TokenSetup.setupWeb3()
+        let web3Instance = await TokenShared.setupWeb3()
+        if (web3Instance instanceof Error) {
+            this.updateLoadingMessage(web3Instance.toString())
+            return
+        }
         this.setState({web3: web3Instance.web3})
 
         // Instantiate contract
-        TokenSetup.setupContracts(this.state.web3, this.tokenContract, this.bondingCurveContract, contractDeployBlockNumber)
-        .then((updatedState) => {
-            this.setState(updatedState)
-            console.log(updatedState)
-        })
+        TokenShared.setupContracts(this.state, web3Instance.web3, this.tokenContract, this.bondingCurveContract, contractDeployBlockNumber, this.callbackSetState)        
     }
-    
 
-    // // Updates state and gets live data from contracts
-    // updateState = async (message) => {
-    //     let web3 = this.state.web3
-    //     let khanaTokenInstance = this.state.contract.instance
-    //     let accounts = this.state.user.accounts
-    //     let fundsInstance = this.state.contract.fundsInstance
-    //     var supply
-    //     var tokenBalance
+    // Used by other components to update parent state including contracts
+    updateState = async (message) => {
+        TokenShared.updateState(this.state, this.callbackSetState, message)
+    }
 
-    //     khanaTokenInstance.getSupply.call().then((newSupply) => {
-    //         supply = (web3.fromWei(newSupply, 'ether')).toString(10);
-    //         return khanaTokenInstance.balanceOf(accounts[0])
-    //     }).then((newBalance) => {
-    //         tokenBalance = (web3.fromWei(newBalance, 'ether')).toString(10);
-    //         return khanaTokenInstance.contractEnabled()
-    //     }).then((contractStatus) => {
+    // Update state (without live data from contracts)
+    updateStaticState = async (state) => {
+        this.setState(state)
+    }
 
-    //         web3.eth.getBalance(fundsInstance.address, (err, result) => {
-    //             let state = this.state
-    //             state.contract.totalSupply = supply
-    //             state.contract.address = khanaTokenInstance.address
-    //             state.contract.contractEnabled = contractStatus
-    //             state.contract.ethAmount = (web3.fromWei(result, 'ether')).toString(10);
-    //             state.user.currentAddress = accounts[0]
-    //             state.user.tokenBalance = tokenBalance
-    //             state.app.status = message ? message : ''
-    //             state.app.isLoading = false
+    // Updates loading / status message
+    updateLoadingMessage = async(message) => {
+        let appState = this.state.app
+        appState.status = message
+        appState.isLoading = true
+        this.setState({ app: appState })
+        if (message !== '') {
+            console.log(message)
+        }
+    }
 
-    //             return this.setState(state)
-    //         })
+    // Should only be called when updating the state from within parent
+    // For updating state from children, use updateState or updateStaticState
+    callbackSetState = async (state, error, refreshState) => {
+        if (error != null) {
+            console.log("Shit, an error: " + error)
+            this.updateLoadingMessage(error.toString())
+            return
+        }
 
-    //     }).catch((error) => {
-    //         console.log(error)
-    //     })
-
-    //     if (this.state.user.isAdmin && this.state.navigation === 2) {
-    //         document.getElementById("awardButton").disabled = false;
-    //     }
-
-    //     if (message) {
-    //         console.log(message);
-    //     }
-    // }
-
-    // // Update state (without live data from contracts)
-    // updateStaticState = async (state) => {
-    //     this.setState(state)
-    // }
-
-    // // Updates loading / status message
-    // updateLoadingMessage = async(message) => {
-    //     let appState = this.state.app
-    //     appState.status = message
-    //     appState.isLoading = true
-    //     this.setState({ app: appState })
-    //     if (message !== '') {
-    //         console.log(message)
-    //     }
-    // }
+        this.setState(state)
+        if (refreshState) {
+            this.updateState()
+        }
+    }
 
     render() {
+        const isLoadingFirstTime = this.state.app.isLoading && this.state.user == null
+
         return (
-            <div>hello 
+            <div>
+            {isLoadingFirstTime ? (
+                    <div> Current loading... </div>
+            ) : (
+                <div className="App">
+                    <Navigation 
+                        state={this.state}
+                        updateStaticState={ this.updateStaticState }
+                    />
 
+                    <main className="container">
+                        { /* User dashboard section */}
+                        {this.state.navigation === 0 &&
+                            <UserDashboard
+                                user={this.state.user}
+                                contract={this.state.contract}
+                                web3={this.state.web3}
+                                updateStaticState={this.updateStaticState}
+                                updateState={this.updateState}
+                                updateLoadingMessage={this.updateLoadingMessage}
+                            />
+                        }
+
+                        { /* Token information section */}
+                        {this.state.navigation === 1 &&
+                            <TokenInformation
+                                contract={this.state.contract}
+                                updateLoadingMessage={this.updateLoadingMessage}
+                                updateStaticState={this.updateStaticState}
+                                updateState={this.updateState}
+                            />
+                        }
+
+                        { /* Admin section */}
+                        {this.state.navigation === 2 &&
+                            <Admin
+                                state={this.state}
+                                updateState={this.updateState}
+                                updateLoadingMessage={this.updateLoadingMessage}
+                            />
+                        }
+
+                        <Notifications
+                            state={this.state}
+                            message={this.state.app.status}
+                            updateStaticState={this.updateStaticState}
+                        />
+
+                    </main>
+                </div >
+            ) }
             </div>
-            // <div className="App">
-            //     <Navigation 
-            //         state={this.state}
-            //         updateStaticState={this.updateStaticState}
-            //         />
-
-            //     <main className="container">
-            //         { /* User dashboard section */}
-            //         { this.state.navigation === 0 &&
-            //             <UserDashboard 
-            //                 user={this.state.user} 
-            //                 contract={this.state.contract} 
-            //                 web3={this.state.web3} 
-            //                 updateStaticState={this.updateStaticState} 
-            //                 updateState={this.updateState} 
-            //                 updateLoadingMessage={this.updateLoadingMessage}
-            //                 />
-            //         }
-
-            //         { /* Token information section */}
-            //         { this.state.navigation === 1 &&
-            //             <TokenInformation 
-            //                 contract={this.state.contract} 
-            //                 updateLoadingMessage={this.updateLoadingMessage}
-            //                 updateStaticState={this.updateStaticState}
-            //                 updateState={this.updateState} 
-            //                 />
-            //         }
-
-            //         { /* Admin section */}
-            //         { this.state.navigation === 2 &&
-            //             <Admin 
-            //                 state={this.state} 
-            //                 updateState={this.updateState} 
-            //                 updateLoadingMessage={this.updateLoadingMessage} 
-            //                 />
-            //         }
-            
-            //         <Notifications 
-            //             state={this.state}
-            //             message={this.state.app.status} 
-            //             updateStaticState={this.updateStaticState} 
-            //             />
-
-            //     </main>
-            // </div>
         );
+        
     }
 }
 
