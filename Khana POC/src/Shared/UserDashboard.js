@@ -53,7 +53,7 @@ class UserDashboard extends Component {
                     <Grid container justify="flex-start" spacing={16}>
                         <Grid key={0} item>
                             <h4>My information</h4>
-                            <p>My address: {shortenAddress(this.props.user.currentAddress)}<br />
+                            <p>My address: {shortenAddress(this.props.user.currentAddress, this.props.updateState)}<br />
                             My balance: {this.props.user.tokenBalance}  {this.props.contract.tokenSymbol}<br />
                             I have {((this.props.user.tokenBalance / this.props.contract.totalSupply) * 100).toFixed(2)}% of the supply</p>
                         </Grid>
@@ -62,10 +62,10 @@ class UserDashboard extends Component {
                     <Grid container justify="flex-start" spacing={16}>
                         <Grid key={0} item>
                             <h4>Token Information</h4>
-                            <p>{this.props.contract.tokenName} contract address: {shortenAddress(this.props.contract.address)}<br />
+                            <p>{this.props.contract.tokenName} contract address: {shortenAddress(this.props.contract.address, this.props.updateState)}<br />
                                 Total supply: {this.props.contract.totalSupply} {this.props.contract.tokenSymbol}</p>
                             {this.props.contract.fundsInstance &&
-                                <p>Bonding curve address: {shortenAddress(this.props.contract.fundsInstance.address)}<br />
+                                <p>Bonding curve address: {shortenAddress(this.props.contract.fundsInstance.address, this.props.updateState)}<br />
                                     ETH in bonding curve: {this.props.contract.ethAmount} ETH</p>
                             }
                         </Grid>

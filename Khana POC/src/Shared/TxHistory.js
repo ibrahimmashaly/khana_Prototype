@@ -43,10 +43,10 @@ class TxHistory extends Component {
             return (
                 <TableRow key={tx.ethTxHash} hover>
                     <TableCell component="th" scope="row">
-                        {shortenAddress(tx.minter)}
+                        {shortenAddress(tx.minter, this.props.updateState)}
                     </TableCell>
                     <TableCell>{tx.amount} {this.props.contract.tokenSymbol}</TableCell>
-                    <TableCell>{shortenAddress(tx.awardedTo)}</TableCell>
+                    <TableCell>{shortenAddress(tx.awardedTo, this.props.updateState)}</TableCell>
                     <TableCell numeric><a href={endPoints.blockExplorer + "tx/" + tx.ethTxHash} target="_blank">{tx.blockNumber}</a></TableCell>
                     {tx.reason != null ? (
                         <TableCell>{tx.reason}</TableCell>
