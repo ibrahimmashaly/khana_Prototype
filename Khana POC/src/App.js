@@ -1,7 +1,7 @@
 import React from 'react'
 import { BrowserRouter as Router, Route } from "react-router-dom";
-import Khana from './Khana';
-import BlockDam from './BlockDam';
+import Khana from './Communities/Khana';
+import BlockDam from './Communities/BlockDam';
 
 const KhanaComponent = () => (
     <Khana />

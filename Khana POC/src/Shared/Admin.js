@@ -226,7 +226,7 @@ class Admin extends Component {
         return (
             <Grid container>
                 <Grid item md>
-                    <Grid container justify="left">
+                    <Grid container justify="flex-start">
                         <Grid key={0} item>
                             <h4>Token actions</h4>
                             <p><b>Award</b> tokens to community members for their contributions and participation.</p>
@@ -240,7 +240,7 @@ class Admin extends Component {
                         </Grid>
                     </Grid>
 
-                    <Grid container justify="left">
+                    <Grid container justify="flex-start">
                         <Grid key={0} item>
                             <p><b>Burn</b> tokens belonging to community members.</p>
                             <form onSubmit={this.burnTokens} id="burnTokens">
@@ -250,7 +250,7 @@ class Admin extends Component {
                             </form>
                         </Grid>
                     </Grid>
-                    <Grid container justify="left">
+                    <Grid container justify="flex-start">
                         <Grid key={0} item>
                             <h4>Admin Tools</h4>
 

@@ -50,7 +50,7 @@ class UserDashboard extends Component {
         return (
             <Grid container spacing={8}>
                 <Grid item md>
-                    <Grid container justify="left" spacing={16}>
+                    <Grid container justify="flex-start" spacing={16}>
                         <Grid key={0} item>
                             <h4>My information</h4>
                             <p>My address: {shortenAddress(this.props.user.currentAddress)}<br />
@@ -59,7 +59,7 @@ class UserDashboard extends Component {
                         </Grid>
                     </Grid>
 
-                    <Grid container justify="left" spacing={16}>
+                    <Grid container justify="flex-start" spacing={16}>
                         <Grid key={0} item>
                             <h4>Token Information</h4>
                             <p>{this.props.contract.tokenName} contract address: {shortenAddress(this.props.contract.address)}<br />
@@ -72,7 +72,7 @@ class UserDashboard extends Component {
                     </Grid>
 
                     {this.props.user.tokenBalance > 0 &&
-                        <Grid container justify="left" spacing={16}>
+                        <Grid container justify="flex-start" spacing={16}>
                             <Grid key={0} item>
                                 <h4>Sell my tokens</h4>
                                 <p>Sell your tokens to the bonding curve below</p>
