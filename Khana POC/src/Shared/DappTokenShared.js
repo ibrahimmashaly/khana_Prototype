@@ -35,7 +35,7 @@ class TokenShared extends Component {
         },
         app: {
             status: 'Loading...',
-            isLoading: false,
+            isLoading: true,
         },
         navigation: 0, // Used for knowing where we are in the navigation 'tabs'
     }

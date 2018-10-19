@@ -91,9 +91,7 @@ class Dapp extends Component {
 
                     {this.state.navigation === 0 &&
                         <UserDashboard
-                            user={this.state.user}
-                            contract={this.state.contract}
-                            web3={this.state.web3}
+                            state={this.state}
                             updateStaticState={this.updateStaticState}
                             updateState={this.updateState}
                             updateLoadingMessage={this.updateLoadingMessage}

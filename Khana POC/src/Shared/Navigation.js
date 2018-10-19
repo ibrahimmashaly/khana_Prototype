@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 
-import { Pane, Heading, Tablist, Tab } from 'evergreen-ui'
+import { Pane, Heading, Tablist, Tab, Spinner } from 'evergreen-ui'
 
 class Navigation extends Component {
 
@@ -28,9 +28,18 @@ class Navigation extends Component {
     render() {
         return (
             <Pane>
-                <Heading size={100} marginTop="default">Khana Framework: 📈 {this.props.state.contract.tokenName} ({this.props.state.contract.tokenSymbol})</Heading>
+                <Pane display="flex" padding={16}>
+                    {this.props.state.app.isLoading &&
+                    <Pane alignItems="center">
+                        <Spinner size={24} /> 
+                    </Pane>
+                    }
+                    <Pane>
+                        <Heading size={100}>Khana Framework: 📈 {this.props.state.contract.tokenName} ({this.props.state.contract.tokenSymbol})</Heading>
+                    </Pane>
+                </Pane>
                 {/* <Heading size={100} marginTop="default">{this.props.state.contract.contractEnabled && this.props.state.contract.length !== 0 ? "" : " - ❌ Current disabled ❌"}</Heading> */}
-                <Tablist marginTop={16} marginBottom={16} flexBasis={240} marginRight={24}>
+                <Tablist marginBottom={16} flexBasis={240} marginRight={24}>
                     {this.createTab('Dashboard', 0)}
                     {this.createTab('Tx History', 1)}
                     {this.props.state.user.isAdmin &&
