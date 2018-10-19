@@ -58,38 +58,42 @@ class TxHistory extends Component {
             )
         })
 
-        let reasonsLoaded = sortedTxList[0].reason != null
+        let reasonsLoaded = sortedTxList.length > 0 ? sortedTxList[0].reason != null : true
 
         return (
             <div>
-            { this.props.contract.latestIpfsHash &&
-                <Grid key={0} item xs={8} sm={10} md={12}>
-                    {reasonsLoaded === false &&
-                        <Button variant="outlined" size="small" onClick={this.getIpfsReasons}>Load minting reasons</Button>
-                    }
-                    <Button variant="outlined" size="small" href={endPoints.ipfsEndpoint + sortedTxList[0].ipfsHash} target="_blank">Get latest raw log</Button>
-                    <p></p>
+                { sortedTxList.length === 0 &&
+                    <div>No transaction history</div>
+                }
+                
+                { this.props.contract.latestIpfsHash &&
+                    <Grid key={0} item xs={8} sm={10} md={12}>
+                        {reasonsLoaded === false &&
+                            <Button variant="outlined" size="small" onClick={this.getIpfsReasons}>Load minting reasons</Button>
+                        }
+                        <Button variant="outlined" size="small" href={endPoints.ipfsEndpoint + sortedTxList[0].ipfsHash} target="_blank">Get latest raw log</Button>
+                        <p></p>
 
-                    {transactionList.length > 0 &&
-                        <Paper style={{ display: 'flex', overflowX: 'auto' }}>
-                            <Table padding='dense'>
-                                <TableHead>
-                                    <TableRow>
-                                        <TableCell>Minter</TableCell>
-                                        <TableCell>Amount</TableCell>
-                                        <TableCell>Receiver</TableCell>
-                                        <TableCell>Block #</TableCell>
-                                        <TableCell>Reasons</TableCell>
-                                    </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                    {transactionList}
-                                </TableBody>
-                            </Table>
-                        </Paper>
-                    }
-                </Grid>
-            }
+                        {transactionList.length > 0 &&
+                            <Paper style={{ display: 'flex', overflowX: 'auto' }}>
+                                <Table padding='dense'>
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell>Minter</TableCell>
+                                            <TableCell>Amount</TableCell>
+                                            <TableCell>Receiver</TableCell>
+                                            <TableCell>Block #</TableCell>
+                                            <TableCell>Reasons</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {transactionList}
+                                    </TableBody>
+                                </Table>
+                            </Paper>
+                        }
+                    </Grid>
+                }
             </div>
         )
     }

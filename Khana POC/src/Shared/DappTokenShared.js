@@ -3,9 +3,7 @@ import { Component } from 'react';
 
 class TokenShared extends Component {
 
-    //
     // Setup
-    //
 
     static defaultState = {
         web3: null,
@@ -144,9 +142,7 @@ class TokenShared extends Component {
         })
     }
 
-    //
     // Updating
-    //
 
     // Updates state and gets live data from contracts
     static updateState = async (state, callback, message) => {

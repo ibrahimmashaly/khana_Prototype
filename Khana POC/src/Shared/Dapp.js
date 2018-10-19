@@ -1,41 +1,14 @@
-//
-// BlockDam (BCD) based imports
-//
+import TokenShared from './DappTokenShared';
+import '../App.css'
 
-import BlockDamToken from '../build/contracts/BlockDamToken.json'
-import BondingCurveFunds from '../build/contracts/BlockDamBondingCurveFunds.json'
+import React, { Component } from 'react';
+import Navigation from './Navigation';
+import UserDashboard from './UserDashboard';
+import TokenInformation from './TokenInformation';
+import Admin from './Admin';
+import Notifications from './Notifications';
 
-//
-// Update this value so we don't have to transverse the entire blockchain to find events
-//
-
-// const contractDeployBlockNumber = 0   // For use when developing
-const contractDeployBlockNumber = 3009499   // KHNA Rinkeby deployment block
-
-//
-// Shared components
-//
-
-import TokenShared from './Shared/_tokenShared';
-import Navigation from './Shared/Navigation';
-import UserDashboard from './Shared/UserDashboard';
-import TokenInformation from './Shared/TokenInformation';
-import Admin from './Shared/Admin';
-import Notifications from './Shared/Notifications';
-
-//
-// Styling
-//
-
-import './App.css'
-
-//
-// Other
-//
-
-import React, { Component } from 'react'
-
-class App extends Component {
+class Dapp extends Component {
 
     tokenContract;
     bondingCurveContract;
@@ -45,8 +18,8 @@ class App extends Component {
 
         this.state = { app: { status: "", isLoading: true } }
         const contract = require('truffle-contract')
-        this.tokenContract = contract(BlockDamToken)
-        this.bondingCurveContract = contract(BondingCurveFunds)
+        this.tokenContract = contract(props.token)
+        this.bondingCurveContract = contract(props.bondingCurve)
     }
 
     async componentWillMount() {
@@ -63,7 +36,7 @@ class App extends Component {
         this.setState({web3: web3Instance.web3})
 
         // Instantiate contract
-        TokenShared.setupContracts(this.state, web3Instance.web3, this.tokenContract, this.bondingCurveContract, contractDeployBlockNumber, this.callbackSetState)        
+        TokenShared.setupContracts(this.state, web3Instance.web3, this.tokenContract, this.bondingCurveContract, this.props.startingBlock, this.callbackSetState)        
     }
 
     // Used by other components to update parent state including contracts
@@ -108,12 +81,12 @@ class App extends Component {
         return (
             <div>
             {isLoadingFirstTime ? (
-                    <div> Current loading... </div>
+                <div> Current loading... </div>
             ) : (
                 <div className="App">
-                    <Navigation 
+                    <Navigation
                         state={this.state}
-                        updateStaticState={ this.updateStaticState }
+                        updateStaticState={this.updateStaticState}
                     />
 
                     <main className="container">
@@ -159,8 +132,7 @@ class App extends Component {
             ) }
             </div>
         );
-        
     }
 }
 
-export default App
+export default Dapp
