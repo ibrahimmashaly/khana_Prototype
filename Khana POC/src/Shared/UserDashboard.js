@@ -1,7 +1,7 @@
 import React, { Component } from 'react'
 import {shortenAddress} from '../utils/helpers';
 
-import { Pane, Heading, Text, TextInputField, Button } from 'evergreen-ui';
+import { Pane, Heading, Text, TextInputField, Button, Alert } from 'evergreen-ui';
 
 
 class UserDashboard extends Component {
@@ -48,6 +48,17 @@ class UserDashboard extends Component {
         
         return (
             <Pane padding={8} flex="1">
+                { !this.props.state.contract.contractEnabled && !this.props.state.app.isLoading &&
+                <Pane marginBottom={16}>
+                    <Alert
+                        intent="danger"
+                        title="Emergency stop activated"
+                    >
+                        The smart contract's emergency stop feature has been activated. Therefore most actions are currently disabled.
+                        Contact your community leader(s) for more information.
+                    </Alert>
+                </Pane>
+                }                
                 
                 <Pane padding={14} background="greenTint" borderRadius={5} border="default">
                     <Pane marginBottom={4}>

@@ -38,7 +38,6 @@ class Navigation extends Component {
                         <Heading size={100}>Khana Framework: 📈 <strong>{this.props.state.contract.tokenName} ({this.props.state.contract.tokenSymbol})</strong></Heading>
                     </Pane>
                 </Pane>
-                {/* <Heading size={100} marginTop="default">{this.props.state.contract.contractEnabled && this.props.state.contract.length !== 0 ? "" : " - ❌ Current disabled ❌"}</Heading> */}
                 <Tablist marginBottom={8} flexBasis={240} marginRight={24}>
                     {this.createTab('Dashboard', 0)}
                     {this.createTab('Grants', 1)}
