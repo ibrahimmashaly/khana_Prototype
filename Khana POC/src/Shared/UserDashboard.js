@@ -47,11 +47,11 @@ class UserDashboard extends Component {
     render() {
         
         return (
-            <Pane padding={16} background="tint1" flex="1">
+            <Pane padding={8} flex="1">
                 
-                <Pane padding={14} background="greenTint" borderRadius={3}>
+                <Pane padding={14} background="greenTint" borderRadius={5} border="default">
                     <Pane marginBottom={4}>
-                        <Heading size={600}>My Information</Heading>
+                        <Heading size={400}>My Information</Heading>
                     </Pane>
                     <Pane>
                         {this.props.state.app.isLoading ? (
@@ -66,7 +66,7 @@ class UserDashboard extends Component {
                     </Pane>
 
                     <Pane marginBottom={4} marginTop={18}>
-                        <Heading size={600}>Token Information</Heading>
+                        <Heading size={400}>Token Information</Heading>
                     </Pane>
                     <Pane>
                         {this.props.state.app.isLoading ? (
@@ -82,9 +82,9 @@ class UserDashboard extends Component {
 
                 <p></p>
 
-                <Pane padding={14} background="redTint" borderRadius={3}>
+                <Pane padding={14} background="tint1" borderRadius={5} border="default">
                     <Pane marginBottom={4}>
-                        <Heading size={600}>Bonding Curve Information</Heading>
+                        <Heading size={400}>Bonding Curve Information</Heading>
                     </Pane>
                     <Pane>
                         {this.props.state.app.isLoading ? (

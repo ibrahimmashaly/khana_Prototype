@@ -1,6 +1,7 @@
 import React, { Component } from 'react'
-import ipfs from '../utils/ipfs';
-import {endPoints, copy} from '../utils/helpers';
+import ipfs from '../utils/ipfs'
+import {endPoints, copy} from '../utils/helpers'
+import Linkify from 'react-linkify'
 
 import {Table, Pane, Button, Popover, Position, IconButton, Menu, Text} from 'evergreen-ui';
 
@@ -39,14 +40,18 @@ class GrantHistoryTx extends Component {
         return (
             <Menu> 
                 <Pane
-                    width={240}
+                    width={200}
                     marginTop={16}
                     marginLeft={16}
                 >
                 {tx.reason != null ? (
+                    <Pane padding={4}>
                         <Text size={400}>
-                        Grant Reason: {tx.reason}
+                            <Linkify properties={{target: '_blank'}}>
+                                Grant Reason: {tx.reason}
+                            </Linkify>
                         </Text>
+                    </Pane>
                 ): (
                     <Text size={400}>
                         <Button 
@@ -61,6 +66,8 @@ class GrantHistoryTx extends Component {
                 </Pane>
                 
                 <Menu.Group>
+
+                    <Menu.Divider />
 
                     <Menu.Item 
                         onSelect={() => { 
