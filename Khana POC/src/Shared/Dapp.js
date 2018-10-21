@@ -2,6 +2,7 @@ import TokenShared from './DappTokenShared'
 import '../App.css'
 
 import React, { Component } from 'react'
+import { notificationNotify, notificationSuccess, notificationWarning, notificationDanger} from '../utils/helpers'
 import Navigation from './Navigation'
 import UserDashboard from './UserDashboard'
 import Grants from './Grants'
@@ -31,7 +32,7 @@ class Dapp extends Component {
         // Setup web3 instance
         let web3Instance = await TokenShared.setupWeb3()
         if (web3Instance instanceof Error) {
-            this.updateLoadingMessage(web3Instance.toString())
+            this.updateLoadingMessage("Error occured", web3Instance.toString(), 3)
             return
         }
         this.setState({web3: web3Instance.web3})
@@ -41,8 +42,9 @@ class Dapp extends Component {
     }
 
     // Used by other components to update parent state including contracts
-    updateState = async (message) => {
+    updateState = async (message, description, alertLevel) => {
         TokenShared.updateState(this.state, this.callbackSetState, message)
+        this.createNotification(message, description, alertLevel)
     }
 
     // Update state (without live data from contracts)
@@ -51,13 +53,24 @@ class Dapp extends Component {
     }
 
     // Updates loading / status message
-    updateLoadingMessage = async(message) => {
+    updateLoadingMessage = async(message, description, alertLevel) => {
         let appState = this.state.app
         appState.status = message
         appState.isLoading = true
         this.setState({ app: appState })
-        if (message !== '') {
-            console.log(message)
+        this.createNotification(message, description, alertLevel)
+    }
+
+    createNotification = async (message, description, alertLevel) => {
+        // console.log(message, description, alertLevel)
+        if (message != null) {
+            switch (alertLevel) {
+                case 0: notificationNotify(message, description); break
+                case 1: notificationSuccess(message, description); break
+                case 2: notificationWarning(message, description); break
+                case 3: notificationDanger(message, description); break
+                default: notificationNotify(message, description)
+            }
         }
     }
 
@@ -66,7 +79,7 @@ class Dapp extends Component {
     callbackSetState = async (state, error, refreshState) => {
         if (error != null) {
             console.log("Shit, an error: " + error)
-            this.updateLoadingMessage(error.toString())
+            this.updateLoadingMessage("Opps!", error.toString(), 3)
             return
         }
 

@@ -8,11 +8,11 @@ import {Table, Pane, Button, Popover, Position, IconButton, Menu, Text} from 'ev
 class GrantHistoryTx extends Component {
     
     getIpfsReasons = async (ipfsHash) => {
-        this.props.updateLoadingMessage('Loading IPFS reasons...')
+        this.props.updateLoadingMessage('Loading grant reasons...', '', 0)
 
         ipfs.files.cat('/ipfs/' + this.props.contract.latestIpfsHash, (err, file) => {
             if (err) {
-                this.props.updateState(err.message)
+                this.props.updateState("Grant file Error", err.message, 3)
             }
 
             // Parse JSON to object
@@ -23,7 +23,7 @@ class GrantHistoryTx extends Component {
                 value.reason = auditLog[index].reason
             })
             this.props.updateStaticState({ contract: contractState })
-            this.props.updateState('IPFS reasons loaded')
+            this.props.updateState('Grant reasons loaded', '', 1)
         })
     }
 
@@ -91,14 +91,12 @@ class GrantHistoryTx extends Component {
 
                     { copy(
                         this.createMenuItemToCopy('Copy granter address'), 
-                        tx.minter, 
-                        console.log
+                        tx.minter
                     )}
 
                     { copy(
                         this.createMenuItemToCopy('Copy receiver address'),
                         tx.awardedTo,
-                        console.log
                     )}
                 </Menu.Group>
             </Menu>

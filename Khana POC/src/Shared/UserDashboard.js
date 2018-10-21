@@ -8,7 +8,7 @@ class UserDashboard extends Component {
 
     sellTokens = async (event) => {
         event.preventDefault();
-        this.props.updateLoadingMessage('Selling tokens...')
+        this.props.updateLoadingMessage('Selling tokens...', '', 0)
 
         let khanaTokenInstance = this.props.state.contract.instance
         let accounts = this.props.state.user.accounts
@@ -16,7 +16,7 @@ class UserDashboard extends Component {
         let tokenBalance = this.props.state.web3.toWei(this.props.state.user.tokenBalance, 'ether')
 
         if (amount === 0) {
-            this.props.updateState('An amount must be entered');
+            this.props.updateState('Error', 'An amount must be entered', 2);
             return
         }
 
@@ -25,22 +25,22 @@ class UserDashboard extends Component {
 
             if (alert === true) {
                 khanaTokenInstance.sell(amount, { from: accounts[0], gas: 100000 }).then((success) => {
-                    this.props.updateLoadingMessage('Waiting for transaction to confirm...')
+                    this.props.updateLoadingMessage('Waiting for transaction to confirm...', 'This may take a while depending on the network', 0)
 
                     let sellEvent = khanaTokenInstance.LogSell({ fromBlock: 'latest' }, (err, response) => {
                         let ethReceived = this.props.state.web3.fromWei(response.args.ethReceived.toString(), 'ether')
 
-                        this.props.updateState('Sell completed, received ' + ethReceived + ' ETH');
+                        this.props.updateState('Success', 'Sell completed, received ' + ethReceived + ' ETH', 1);
                         sellEvent.stopWatching();
                     })
                 }).catch((error) => {
-                    this.props.updateState(error.message)
+                    this.props.updateState('Sell error occured!', error.message, 3)
                 })
             } else {
                 this.props.updateState()
             }
         }).catch((error) => {
-            this.props.updateState(error.message)
+            this.props.updateState('Sell calculation error', error.message, 3)
         })
     }
 
@@ -69,7 +69,7 @@ class UserDashboard extends Component {
                             <Text>Loading information...</Text>
                         ) : (
                             <Text>
-                                My address : {shortenAddress(this.props.state.user.currentAddress, this.props.updateState)} <br />
+                                My address : {shortenAddress(this.props.state.user.currentAddress)} <br />
                                 My balance: {this.props.state.user.tokenBalance}  {this.props.state.contract.tokenSymbol} <br />
                                 My portion of the supply: {((this.props.state.user.tokenBalance / this.props.state.contract.totalSupply) * 100).toFixed(2)}%
                             </Text>
@@ -84,7 +84,7 @@ class UserDashboard extends Component {
                             <Text>Loading information...</Text>
                         ) : (
                                 <Text>
-                                    {this.props.state.contract.tokenName} contract address: {shortenAddress(this.props.state.contract.address, this.props.updateState)}<br />
+                                    {this.props.state.contract.tokenName} contract address: {shortenAddress(this.props.state.contract.address)}<br />
                                     Total supply: {this.props.state.contract.totalSupply} {this.props.state.contract.tokenSymbol}
                                 </Text>
                             )}
@@ -103,7 +103,7 @@ class UserDashboard extends Component {
                         ) : (
                             <Pane>
                                 <Text>
-                                    Bonding curve address: {shortenAddress(this.props.state.contract.fundsInstance.address, this.props.updateState)}<br />
+                                    Bonding curve address: {shortenAddress(this.props.state.contract.fundsInstance.address)}<br />
                                     Amount in bonding curve: {((this.props.state.contract.ethAmount) * 1).toFixed(4)} ETH
                                 </Text>
                                 <p></p>

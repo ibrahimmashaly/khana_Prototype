@@ -1,13 +1,18 @@
 import React from 'react';
 import { CopyToClipboard } from 'react-copy-to-clipboard';
-import { Icon } from 'evergreen-ui';
+import { Icon, toaster } from 'evergreen-ui';
 
 export let endPoints = {
     blockExplorer: "https://rinkeby.etherscan.io/",
     ipfsEndpoint: "https://gateway.ipfs.io/ipfs/"
 }
 
-export function shortenAddress(address, callback) {
+
+//
+// Clipboard operations
+//
+
+export function shortenAddress(address) {
     if (address == null) { return null }
     let shortAddress = address.substr(0, 6) + '...' + address.substr(address.length - 4)
 
@@ -15,7 +20,7 @@ export function shortenAddress(address, callback) {
     <CopyToClipboard 
         text={address}
         onCopy={() => {
-            callback('Copied to clipboard!')
+            notificationNotify('Copied to clipboard!')
         }}>
 
         <span>
@@ -26,15 +31,51 @@ export function shortenAddress(address, callback) {
     )
 }
 
-export function copy(object, textToCopy, callback) {
+export function copy(object, textToCopy) {
     if (textToCopy == null || object == null) { return null }
     return (
         <CopyToClipboard
             text={textToCopy}
             onCopy={() => {
-                callback('Copied to clipboard!')
+                notificationNotify('Copied to clipboard!')
             }}>
             {object}
         </CopyToClipboard >
     )
+}
+
+//
+// Notifications
+//
+
+export function notificationNotify(message, description) {
+    if (description != null) {
+        toaster.notify(message, {description: description, duration: 5})
+    } else {
+        toaster.notify(message)
+    }
+}
+
+export function notificationSuccess(message, description) {
+    if (description != null) {
+        toaster.success(message, { description: description, duration: 5 })
+    } else {
+        toaster.success(message)
+    }
+}
+
+export function notificationWarning(message, description) {
+    if (description != null) {
+        toaster.warning(message, { description: description, duration: 10 })
+    } else {
+        toaster.warning(message)
+    }
+}
+
+export function notificationDanger(message, description) {
+    if (description != null) {
+        toaster.danger(message, { description: description, duration: 10 })
+    } else {
+        toaster.danger(message)
+    }
 }
