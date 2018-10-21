@@ -1,10 +1,11 @@
-import TokenShared from './DappTokenShared';
+import TokenShared from './DappTokenShared'
 import '../App.css'
 
-import React, { Component } from 'react';
-import Navigation from './Navigation';
-import UserDashboard from './UserDashboard';
-// import TokenInformation from './TokenInformation';
+import React, { Component } from 'react'
+import Navigation from './Navigation'
+import UserDashboard from './UserDashboard'
+import Grants from './Grants'
+import GrantHistory from './GrantHistory'
 // import Admin from './Admin';
 // import Notifications from './Notifications';
 
@@ -89,6 +90,7 @@ class Dapp extends Component {
                         updateStaticState={this.updateStaticState}
                     />
 
+                    { /* User dashboard section */}
                     {this.state.navigation === 0 &&
                         <UserDashboard
                             state={this.state}
@@ -97,6 +99,26 @@ class Dapp extends Component {
                             updateLoadingMessage={this.updateLoadingMessage}
                         />
                     }
+
+                    { /* Grants section */}
+                    {this.state.navigation === 1 &&
+                        <Grants
+                            state={this.state}
+                            updateStaticState={this.updateStaticState}
+                            updateState={this.updateState}
+                            updateLoadingMessage={this.updateLoadingMessage}
+                        />
+                    }
+
+                     { /* Grant History section */}
+                        {this.state.navigation === 2 &&
+                            <GrantHistory
+                                contract={this.state.contract}
+                                updateLoadingMessage={this.updateLoadingMessage}
+                                updateStaticState={this.updateStaticState}
+                                updateState={this.updateState}
+                            />
+                        }
                     
                 </div >
             ) }

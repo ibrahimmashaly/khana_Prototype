@@ -35,15 +35,16 @@ class Navigation extends Component {
                     </Pane>
                     }
                     <Pane>
-                        <Heading size={100}>Khana Framework: 📈 {this.props.state.contract.tokenName} ({this.props.state.contract.tokenSymbol})</Heading>
+                        <Heading size={100}>Khana Framework: 📈 <strong>{this.props.state.contract.tokenName} ({this.props.state.contract.tokenSymbol})</strong></Heading>
                     </Pane>
                 </Pane>
                 {/* <Heading size={100} marginTop="default">{this.props.state.contract.contractEnabled && this.props.state.contract.length !== 0 ? "" : " - ❌ Current disabled ❌"}</Heading> */}
-                <Tablist marginBottom={16} flexBasis={240} marginRight={24}>
+                <Tablist marginBottom={8} flexBasis={240} marginRight={24}>
                     {this.createTab('Dashboard', 0)}
-                    {this.createTab('Tx History', 1)}
+                    {this.createTab('Grants', 1)}
+                    {this.createTab('Grant History', 2)}
                     {this.props.state.user.isAdmin &&
-                        this.createTab('Admin', 2)
+                        this.createTab('Admin', 3)
                     }
                 </Tablist>
             </Pane>

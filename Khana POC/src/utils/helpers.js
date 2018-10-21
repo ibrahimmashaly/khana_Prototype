@@ -25,3 +25,16 @@ export function shortenAddress(address, callback) {
     </CopyToClipboard >
     )
 }
+
+export function copy(object, textToCopy, callback) {
+    if (textToCopy == null || object == null) { return null }
+    return (
+        <CopyToClipboard
+            text={textToCopy}
+            onCopy={() => {
+                callback('Copied to clipboard!')
+            }}>
+            {object}
+        </CopyToClipboard >
+    )
+}
