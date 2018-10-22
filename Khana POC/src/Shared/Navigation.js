@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 
-import { Pane, Heading, Tablist, Tab, Spinner } from 'evergreen-ui'
+import { Pane, Heading, Tablist, Tab, Spinner, Alert } from 'evergreen-ui'
 
 class Navigation extends Component {
 
@@ -26,8 +26,18 @@ class Navigation extends Component {
     }
 
     render() {
+        let blockingError = this.props.state.blockerTitle != null
+
         return (
             <Pane>
+                {blockingError &&
+                    <Alert
+                        intent="danger"
+                        title={this.props.state.blockerTitle}
+                    >
+                        {this.props.state.blockerDescription}
+                </Alert>
+                }
                 <Pane display="flex" padding={16}>
                     {this.props.state.app.isLoading &&
                     <Pane alignItems="center">

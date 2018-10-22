@@ -3,7 +3,7 @@ import ipfs from '../utils/ipfs'
 import {endPoints, copy} from '../utils/helpers'
 import Linkify from 'react-linkify'
 
-import {Table, Pane, Button, Popover, Position, IconButton, Menu, Text} from 'evergreen-ui';
+import {Table, Pane, Button, Popover, Position, IconButton, Menu, Text, Heading} from 'evergreen-ui';
 
 class GrantHistoryTx extends Component {
     
@@ -136,7 +136,9 @@ class GrantHistoryTx extends Component {
         return (
             <Pane>
                 { sortedTxList.length === 0 &&
-                    <Pane>No transaction history</Pane>
+                    <Pane margin={16}>
+                        <Heading size={400}>No transaction history</Heading>
+                    </Pane>
                 }
                 
                 {this.props.contract.latestIpfsHash && sortedTxList.length > 0 &&

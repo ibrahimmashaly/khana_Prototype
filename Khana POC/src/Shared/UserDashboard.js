@@ -45,7 +45,8 @@ class UserDashboard extends Component {
     }
 
     render() {
-        
+        let portionOfSupply = ((this.props.state.user.tokenBalance / this.props.state.contract.totalSupply) * 100).toFixed(2)
+
         return (
             <Pane padding={8} flex="1">
                 { !this.props.state.contract.contractEnabled && !this.props.state.app.isLoading &&
@@ -71,7 +72,7 @@ class UserDashboard extends Component {
                             <Text>
                                 My address : {shortenAddress(this.props.state.user.currentAddress)} <br />
                                 My balance: {this.props.state.user.tokenBalance}  {this.props.state.contract.tokenSymbol} <br />
-                                My portion of the supply: {((this.props.state.user.tokenBalance / this.props.state.contract.totalSupply) * 100).toFixed(2)}%
+                                My portion of the supply: {portionOfSupply > 0 ? portionOfSupply : 0}%
                             </Text>
                         )}
                     </Pane>
