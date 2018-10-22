@@ -7,7 +7,7 @@ import Navigation from './Navigation'
 import UserDashboard from './UserDashboard'
 import Grants from './Grants'
 import GrantHistory from './GrantHistory'
-// import Admin from './Admin';
+import Admin from './Admin';
 // import Notifications from './Notifications';
 
 class Dapp extends Component {
@@ -32,7 +32,7 @@ class Dapp extends Component {
         // Setup web3 instance
         let web3Instance = await TokenShared.setupWeb3()
         if (web3Instance instanceof Error) {
-            this.updateLoadingMessage("Error occured", web3Instance.toString(), 3)
+            this.updateLoadingMessage("Something went wrong 🤔", web3Instance.toString(), 4)
             return
         }
         this.setState({web3: web3Instance.web3})
@@ -69,6 +69,7 @@ class Dapp extends Component {
                 case 1: notificationSuccess(message, description); break
                 case 2: notificationWarning(message, description); break
                 case 3: notificationDanger(message, description); break
+                case 4: this.setState({blockerTitle: message, blockerDescription: description}); break
                 default: notificationNotify(message, description)
             }
         }
@@ -79,7 +80,7 @@ class Dapp extends Component {
     callbackSetState = async (state, error, refreshState) => {
         if (error != null) {
             console.log("Shit, an error: " + error)
-            this.updateLoadingMessage("Opps!", error.toString(), 3)
+            this.updateLoadingMessage("Something went wrong 🤔", error.toString(), 4)
             return
         }
 
@@ -120,18 +121,28 @@ class Dapp extends Component {
                             updateStaticState={this.updateStaticState}
                             updateState={this.updateState}
                             updateLoadingMessage={this.updateLoadingMessage}
+                            grantsUrl={this.props.grantsUrl}
                         />
                     }
 
                      { /* Grant History section */}
-                        {this.state.navigation === 2 &&
-                            <GrantHistory
-                                contract={this.state.contract}
-                                updateLoadingMessage={this.updateLoadingMessage}
-                                updateStaticState={this.updateStaticState}
-                                updateState={this.updateState}
-                            />
-                        }
+                    {this.state.navigation === 2 &&
+                        <GrantHistory
+                            contract={this.state.contract}
+                            updateLoadingMessage={this.updateLoadingMessage}
+                            updateStaticState={this.updateStaticState}
+                            updateState={this.updateState}
+                        />
+                    }
+
+                    { /* Admin section */}
+                    {this.state.navigation === 3 &&
+                        <Admin
+                            state={this.state}
+                            updateState={this.updateState}
+                            updateLoadingMessage={this.updateLoadingMessage}
+                        />
+                    }
                     
                 </div >
             ) }
@@ -141,46 +152,3 @@ class Dapp extends Component {
 }
 
 export default Dapp
-
-
-
-
-                    //     <main className="container">
-                    //     { /* User dashboard section */}
-                    //     {this.state.navigation === 0 &&
-                    //         <UserDashboard
-                    //             user={this.state.user}
-                    //             contract={this.state.contract}
-                    //             web3={this.state.web3}
-                    //             updateStaticState={this.updateStaticState}
-                    //             updateState={this.updateState}
-                    //             updateLoadingMessage={this.updateLoadingMessage}
-                    //         />
-                    //     }
-
-                    //     { /* Token information section */}
-                    //     {this.state.navigation === 1 &&
-                    //         <TokenInformation
-                    //             contract={this.state.contract}
-                    //             updateLoadingMessage={this.updateLoadingMessage}
-                    //             updateStaticState={this.updateStaticState}
-                    //             updateState={this.updateState}
-                    //         />
-                    //     }
-
-                    //     { /* Admin section */}
-                    //     {this.state.navigation === 2 &&
-                    //         <Admin
-                    //             state={this.state}
-                    //             updateState={this.updateState}
-                    //             updateLoadingMessage={this.updateLoadingMessage}
-                    //         />
-                    //     }
-
-                    //     <Notifications
-                    //         state={this.state}
-                    //         message={this.state.app.status}
-                    //         updateStaticState={this.updateStaticState}
-                    //     />
-
-                    // </main>
