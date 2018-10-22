@@ -1,6 +1,6 @@
 # Khana: Proof of Concept
 
-![PoC interface v.0.1 image](https://raw.githubusercontent.com/mrdavey/KhanaFramework/master/Khana%20POC/PoC.v.0.1.png)
+![PoC interface v.0.2 image](https://raw.githubusercontent.com/mrdavey/KhanaFramework/master/Khana%20POC/KhanaAlpha.png)
 
 This repo is the Proof of Concept, more info on Medium
  - [Incentivising participation and growth in communities (using crypto-economics)](https://medium.com/@mrdavey/incentivising-participation-and-growth-in-communities-using-crypto-economics-5a369dd7f5fc)
@@ -98,7 +98,7 @@ Navigate to the project directory and in terminal: `truffle test`
 *subject to regular changes
 
 ### KhanaToken Rinkeby
-This is the proof of concept, used for testing and showing the concept.
+This is the proof of concept, used for testing, showing the concept, and bootstrapping Khana with Khana.
 
 [Basic front end](http://khana.io/app/) - requires either Metamask or viewing via Web3 compatible app (Status / Coinbase wallet)
 

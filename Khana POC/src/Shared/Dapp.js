@@ -1,5 +1,4 @@
 import TokenShared from './DappTokenShared'
-import '../App.css'
 
 import React, { Component } from 'react'
 import { notificationNotify, notificationSuccess, notificationWarning, notificationDanger} from '../utils/helpers'
@@ -8,7 +7,6 @@ import UserDashboard from './UserDashboard'
 import Grants from './Grants'
 import GrantHistory from './GrantHistory'
 import Admin from './Admin';
-// import Notifications from './Notifications';
 
 class Dapp extends Component {
 
