@@ -1,94 +1,134 @@
 import React, { Component } from 'react'
 import {shortenAddress} from '../utils/helpers';
 
-import Grid from '@material-ui/core/Grid';
-import Button from '@material-ui/core/Button';
+import { Pane, Heading, Text, TextInputField, Button, Alert } from 'evergreen-ui';
 
 
 class UserDashboard extends Component {
 
     sellTokens = async (event) => {
         event.preventDefault();
-        this.props.updateLoadingMessage('Selling tokens...')
+        this.props.updateLoadingMessage('Selling tokens...', '', 0)
 
-        let khanaTokenInstance = this.props.contract.instance
-        let accounts = this.props.user.accounts
-        let amount = this.props.web3.toWei(event.target.amount.value, 'ether')
-        let tokenBalance = this.props.web3.toWei(this.props.user.tokenBalance, 'ether')
+        let khanaTokenInstance = this.props.state.contract.instance
+        let accounts = this.props.state.user.accounts
+        let amount = this.props.state.web3.toWei(Number(event.target.amount.value), 'ether')
+        let tokenBalance = this.props.state.web3.toWei(this.props.state.user.tokenBalance, 'ether')
 
         if (amount === 0) {
-            this.props.updateState('An amount must be entered');
+            this.props.updateState('Error', 'An amount must be entered', 2);
             return
         }
 
         khanaTokenInstance.calculateSellReturn.call(amount, tokenBalance).then((redeemableEth) => {
-            let alert = confirm("You will receive " + this.props.web3.fromWei(redeemableEth, 'ether') + ' ETH in return for ' + this.props.web3.fromWei(amount, 'ether') + ' ' + this.props.contract.tokenSymbol + '. Are you sure?')
+            let alert = confirm("You will receive " + this.props.state.web3.fromWei(redeemableEth, 'ether') + ' ETH in return for ' + this.props.state.web3.fromWei(amount, 'ether') + ' ' + this.props.state.contract.tokenSymbol + '. Are you sure?')
 
             if (alert === true) {
                 khanaTokenInstance.sell(amount, { from: accounts[0], gas: 100000 }).then((success) => {
-                    this.props.updateLoadingMessage('Waiting for transaction to confirm...')
+                    this.props.updateLoadingMessage('Waiting for transaction to confirm...', 'This may take a while depending on the network', 0)
 
                     let sellEvent = khanaTokenInstance.LogSell({ fromBlock: 'latest' }, (err, response) => {
-                        let ethReceived = this.props.web3.fromWei(response.args.ethReceived.toString(), 'ether')
+                        let ethReceived = this.props.state.web3.fromWei(response.args.ethReceived.toString(), 'ether')
 
-                        this.props.updateState('Sell completed, received ' + ethReceived + ' ETH');
+                        this.props.updateState('Success', 'Sell completed, received ' + ethReceived + ' ETH', 1);
                         sellEvent.stopWatching();
                     })
                 }).catch((error) => {
-                    this.props.updateState(error.message)
+                    this.props.updateState('Sell error occured!', error.message, 3)
                 })
             } else {
                 this.props.updateState()
             }
         }).catch((error) => {
-            this.props.updateState(error.message)
+            this.props.updateState('Sell calculation error', error.message, 3)
         })
     }
 
     render() {
-        
+        let portionOfSupply = ((this.props.state.user.tokenBalance / this.props.state.contract.totalSupply) * 100).toFixed(2)
+
         return (
-            <Grid container spacing={8}>
-                <Grid item md>
-                    <Grid container justify="flex-start" spacing={16}>
-                        <Grid key={0} item>
-                            <h4>My information</h4>
-                            <p>My address: {shortenAddress(this.props.user.currentAddress, this.props.updateState)}<br />
-                            My balance: {this.props.user.tokenBalance}  {this.props.contract.tokenSymbol}<br />
-                            I have {((this.props.user.tokenBalance / this.props.contract.totalSupply) * 100).toFixed(2)}% of the supply</p>
-                        </Grid>
-                    </Grid>
+            <Pane padding={8} flex="1">
+                { !this.props.state.contract.contractEnabled && !this.props.state.app.isLoading &&
+                <Pane marginBottom={16}>
+                    <Alert
+                        intent="danger"
+                        title="Emergency stop activated"
+                    >
+                        The smart contract's emergency stop feature has been activated. Therefore most actions are currently disabled.
+                        Contact your community leader(s) for more information.
+                    </Alert>
+                </Pane>
+                }                
+                
+                <Pane padding={14} background="greenTint" borderRadius={5} border="default">
+                    <Pane marginBottom={4}>
+                        <Heading size={400}>My Information</Heading>
+                    </Pane>
+                    <Pane>
+                        {this.props.state.app.isLoading ? (
+                            <Text>Loading information...</Text>
+                        ) : (
+                            <Text>
+                                My address : {shortenAddress(this.props.state.user.currentAddress)} <br />
+                                My balance: {this.props.state.user.tokenBalance}  {this.props.state.contract.tokenSymbol} <br />
+                                My portion of the supply: {portionOfSupply > 0 ? portionOfSupply : 0}%
+                            </Text>
+                        )}
+                    </Pane>
 
-                    <Grid container justify="flex-start" spacing={16}>
-                        <Grid key={0} item>
-                            <h4>Token Information</h4>
-                            <p>{this.props.contract.tokenName} contract address: {shortenAddress(this.props.contract.address, this.props.updateState)}<br />
-                                Total supply: {this.props.contract.totalSupply} {this.props.contract.tokenSymbol}</p>
-                            {this.props.contract.fundsInstance &&
-                                <p>Bonding curve address: {shortenAddress(this.props.contract.fundsInstance.address, this.props.updateState)}<br />
-                                    ETH in bonding curve: {this.props.contract.ethAmount} ETH</p>
-                            }
-                        </Grid>
-                    </Grid>
+                    <Pane marginBottom={4} marginTop={18}>
+                        <Heading size={400}>Token Information</Heading>
+                    </Pane>
+                    <Pane>
+                        {this.props.state.app.isLoading ? (
+                            <Text>Loading information...</Text>
+                        ) : (
+                                <Text>
+                                    {this.props.state.contract.tokenName} contract address: {shortenAddress(this.props.state.contract.address)}<br />
+                                    Total supply: {this.props.state.contract.totalSupply} {this.props.state.contract.tokenSymbol}
+                                </Text>
+                            )}
+                    </Pane>
+                </Pane>
 
-                    {this.props.user.tokenBalance > 0 &&
-                        <Grid container justify="flex-start" spacing={16}>
-                            <Grid key={0} item>
-                                <h4>Sell my tokens</h4>
-                                <p>Sell your tokens to the bonding curve below</p>
-                                <form onSubmit={this.sellTokens} id="contained-button-submit">
-                                    <label htmlFor="contained-button-submit"> Amount of {this.props.contract.tokenSymbol} to sell: <br />
-                                        <input type="text" name="amount" />
-                                    </label>
-                                    <Button variant="outlined" color="primary" size="small" type="submit">Sell tokens</Button>
-                                </form>
+                <p></p>
+
+                <Pane padding={14} background="tint1" borderRadius={5} border="default">
+                    <Pane marginBottom={4}>
+                        <Heading size={400}>Bonding Curve Information</Heading>
+                    </Pane>
+                    <Pane>
+                        {this.props.state.app.isLoading ? (
+                            <Text>Loading information...</Text>
+                        ) : (
+                            <Pane>
+                                <Text>
+                                    Bonding curve address: {shortenAddress(this.props.state.contract.fundsInstance.address)}<br />
+                                    Amount in bonding curve: {((this.props.state.contract.ethAmount) * 1).toFixed(4)} ETH
+                                </Text>
                                 <p></p>
-                            </Grid>
-                        </Grid>
-                    }
-                    
-                </Grid>
-            </Grid>
+                                <Text>Sell your tokens to the bonding curve below</Text>
+                                
+                                <form onSubmit={this.sellTokens} id="sell-tokens">
+                                    <Pane flex={1} alignItems="baseline" display="flex">
+                                        <TextInputField
+                                            label=""
+                                            placeholder="0.0"
+                                            htmlFor="sell-tokens"
+                                            type="text" 
+                                            name="amount"
+                                        />
+                                        <Button type="submit" marginLeft={8}>Sell tokens</Button>
+                                    </Pane>
+                                </form>
+                                
+                            </Pane>
+                        )}
+                    </Pane>
+                </Pane>
+
+            </Pane>
         )
     }
 }

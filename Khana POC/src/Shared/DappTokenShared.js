@@ -35,7 +35,7 @@ class TokenShared extends Component {
         },
         app: {
             status: 'Loading...',
-            isLoading: false,
+            isLoading: true,
         },
         navigation: 0, // Used for knowing where we are in the navigation 'tabs'
     }
@@ -100,7 +100,7 @@ class TokenShared extends Component {
                 awardEventsAll.get((err, result) => {
 
                     if (err) {
-                        // this.updateLoadingMessage(error)
+                        callback(null,"Error loading log events")
                     }
 
                     let logHistory = result.map((log) => {
