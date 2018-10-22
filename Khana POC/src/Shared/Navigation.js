@@ -1,53 +1,62 @@
 import React, { Component } from 'react';
 
-import AppBar from '@material-ui/core/AppBar';
-import LinearProgress from '@material-ui/core/LinearProgress';
-import Toolbar from '@material-ui/core/Toolbar';
-import Typography from '@material-ui/core/Typography';
-import Paper from '@material-ui/core/Paper';
-import Tabs from '@material-ui/core/Tabs';
-import Tab from '@material-ui/core/Tab';
+import { Pane, Heading, Tablist, Tab, Spinner, Alert } from 'evergreen-ui'
 
 class Navigation extends Component {
 
-    handleNavigation = (event, value) => {
+    handleNavigation = (value) => {
         let state = this.props.state
         state.navigation = value
         this.props.updateStaticState(state)
     }
 
-    render() {
+    createTab = (name, index) => {
         return (
-            <div>
-                {this.props.state.app.isLoading &&
-                        <LinearProgress />
-                }
-                <AppBar position="static" color={this.props.state.contract.contractEnabled ? "primary" : "secondary"} >
-                    <Toolbar>
-                        <Typography variant="title" color="inherit">
-                            Khana framework: {this.props.state.contract.tokenName} ({this.props.state.contract.tokenSymbol})
-                            <br />
-                        </Typography>
-                    </Toolbar>
-                    
-                </AppBar >
+            <Tab
+                key={name}
+                id={name}
+                onSelect={() => {
+                    this.handleNavigation(index)
+                }}
+                isSelected={index === this.props.state.navigation}
+            >
+                {name}
+            </Tab>
+        )
+    }
 
-                <Paper>
-                    <Tabs
-                        value={this.props.state.navigation}
-                        onChange={this.handleNavigation}
-                        indicatorColor="primary"
-                        textColor="primary"
-                        centered
+    render() {
+        let blockingError = this.props.state.blockerTitle != null
+
+        return (
+            <Pane>
+                {blockingError &&
+                    <Alert
+                        intent="danger"
+                        title={this.props.state.blockerTitle}
                     >
-                        <Tab label="Dashboard" />
-                        <Tab label="History" />
-                        {this.props.state.user.isAdmin &&
-                            <Tab label="Admin" />
-                        }
-                    </Tabs>
-                </Paper>
-            </div>
+                        {this.props.state.blockerDescription}
+                </Alert>
+                }
+                <Pane display="flex" padding={16}>
+                    {this.props.state.app.isLoading &&
+                    <Pane alignItems="center">
+                        <Spinner size={24} /> 
+                    </Pane>
+                    }
+                    <Pane>
+                        <Heading size={100}>Khana Framework: 📈 <strong>{this.props.state.contract.tokenName} ({this.props.state.contract.tokenSymbol})</strong></Heading>
+                    </Pane>
+                </Pane>
+                <Tablist marginBottom={8} flexBasis={240} marginRight={24}>
+                    {this.createTab('Dashboard', 0)}
+                    {this.createTab('Grants', 1)}
+                    {this.createTab('Grant History', 2)}
+                    {this.props.state.user.isAdmin &&
+                        this.createTab('Admin', 3)
+                    }
+                </Tablist>
+            </Pane>
         )
     }
 }

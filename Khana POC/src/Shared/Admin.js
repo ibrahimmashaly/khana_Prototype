@@ -1,8 +1,7 @@
 import React, { Component } from 'react'
 import ipfs from '../utils/ipfs';
 
-import Grid from '@material-ui/core/Grid';
-import Button from '@material-ui/core/Button';
+import { Pane, TextInputField, Heading, Button } from 'evergreen-ui';
 
 class Admin extends Component {
 
@@ -18,11 +17,9 @@ class Admin extends Component {
         let reason = event.target.reason.value
 
         if (address.length === 0 || amount.length === 0 || reason.length === 0) {
-            this.props.updateState('All details must be filled in to award tokens')
+            this.props.updateState('All details must be filled in to award tokens', '', 2)
             return
         }
-
-        this.props.updateLoadingMessage('Processing')
 
         let getIpfsFile = new Promise((ipfsResult) => {
             let latestIpfsHash = this.props.state.contract.latestIpfsHash
@@ -65,7 +62,7 @@ class Admin extends Component {
 
             // Then store the recent tx and record on blockchain (and events log)
             let ipfsHash = ipfsResult[0].hash
-            this.props.updateLoadingMessage('Entry added to IPFS audit file successfully (with IPFS hash: ' + ipfsHash + '). Please confirm the ethereum transaction via your MetaMask wallet and wait for it to confirm.')
+            this.props.updateLoadingMessage('Entry added to IPFS audit file successfully', 'Please confirm the ethereum transaction via your wallet and wait for it to confirm.', 0)
 
             // Make contract changes
             let khanaTokenInstance = this.props.state.contract.instance
@@ -73,7 +70,7 @@ class Admin extends Component {
 
             khanaTokenInstance.award(address, amount, ipfsHash, { from: accounts[0], gas: 100000, gasPrice: web3.toWei(5, 'gwei') }).then((txResult) => {
 
-                this.props.updateLoadingMessage('Waiting for transaction to confirm...')
+                this.props.updateLoadingMessage('Waiting for transaction to confirm...', '', 0)
 
                 let awardedEvent = khanaTokenInstance.LogAwarded({ fromBlock: 'latest' }, (err, response) => {
 
@@ -93,16 +90,19 @@ class Admin extends Component {
                         })
 
                         this.setState({ contract: contractState })
-                        this.props.updateState('Transaction confirmed with hash: ' + response.transactionHash);
+                        this.props.updateState('Success!', 'Transaction confirmed and tokens granted. See Grant History for more details.', 1);
 
                         awardedEvent.stopWatching()
+                        document.getElementById("awardButton").disabled = false;
                     }
                 })
             }).catch((error) => {
-                this.props.updateState(error.message)
+                this.props.updateState('Awarding error', error.message, 3)
+                document.getElementById("awardButton").disabled = false;
             })
         }).catch((error) => {
-            this.props.updateState(error.message)
+            this.props.updateState('IPFS file error', error.message, 3)
+            document.getElementById("awardButton").disabled = false;
         })
     }
 
@@ -127,12 +127,14 @@ class Admin extends Component {
 
                 // Ensure we're not detecting old events in previous (i.e. the current) block. This bug is more relevant to dev environment where all recent blocks could be emitting this event, causing bugs.
                 if (response.blockNumber >= txResult.receipt.blockNumber) {
-                    this.props.updateState('Transaction confirmed with hash: ' + response.transactionHash);
+                    this.props.updateState('Success!', 'Transaction confirmed and tokens burned.', 1);
                     burnEvent.stopWatching()
+                    document.getElementById("burnTokens").disabled = false;
                 }
             })
         }).catch((error) => {
-            this.props.updateState(error.message)
+            this.props.updateState('Burning error', error.message, 3)
+            document.getElementById("burnTokens").disabled = false;
         })
     }
 
@@ -142,9 +144,9 @@ class Admin extends Component {
 
         let khanaTokenInstance = this.props.state.contract.instance
         khanaTokenInstance.checkIfAdmin(event.target.address.value).then((isAdmin) => {
-            this.props.updateState('User ' + (isAdmin ? 'is ' : 'is not ') + 'an admin')
+            this.props.updateState('User ' + (isAdmin ? 'is ' : 'is not ') + 'an admin', '', (isAdmin ? 1 : 2))
         }).catch((error) => {
-            this.props.updateState(error.message)
+            this.props.updateState('Admin error', error.message, 2)
         })
     }
 
@@ -158,11 +160,11 @@ class Admin extends Component {
             this.props.updateLoadingMessage('Waiting for transaction to confirm')
 
             let addedEvent = khanaTokenInstance.LogAdminAdded({ fromBlock: 'latest' }, (err, response) => {
-                this.props.updateState('User added as an admin');
+                this.props.updateState('Success!', 'User added as an admin', 1);
                 addedEvent.stopWatching();
             })
         }).catch((error) => {
-            this.props.updateState(error.message)
+            this.props.updateState('Admin error', error.message, 3)
         })
     }
 
@@ -176,11 +178,11 @@ class Admin extends Component {
             this.props.updateLoadingMessage('Waiting for transaction to confirm')
 
             let removedEvent = khanaTokenInstance.LogAdminRemoved({ fromBlock: 'latest' }, (err, response) => {
-                this.props.updateState('User removed as an admin');
+                this.props.updateState('Success', 'User removed as an admin', 1);
                 removedEvent.stopWatching();
             })
         }).catch((error) => {
-            this.props.updateState(error.message)
+            this.props.updateState('Admin error', error.message, 3)
         })
     }
 
@@ -195,11 +197,11 @@ class Admin extends Component {
             this.props.updateLoadingMessage('Waiting for transaction to confirm...')
 
             let disabledEvent = khanaTokenInstance.LogContractDisabled({ fromBlock: 'latest' }, (err, response) => {
-                this.props.updateState('Emergency stop activated');
+                this.props.updateState('Success!', 'Emergency stop activated', 1);
                 disabledEvent.stopWatching();
             })
         }).catch((error) => {
-            this.props.updateState(error.message)
+            this.props.updateState('Admin error', error.message, 3)
         })
     }
 
@@ -214,74 +216,157 @@ class Admin extends Component {
             this.props.updateLoadingMessage('Waiting for transaction to confirm...')
 
             let enabledEvent = khanaTokenInstance.LogContractEnabled({ fromBlock: 'latest' }, (err, response) => {
-                this.props.updateState('Contract reenabled');
+                this.props.updateState('Success!', 'Contract re-enabled', 1);
                 enabledEvent.stopWatching();
             })
         }).catch((error) => {
-            this.props.updateState(error.message)
+            this.props.updateState('Admin error', error.message, 3)
         })
     }
 
     render() {
         return (
-            <Grid container>
-                <Grid item md>
-                    <Grid container justify="left">
-                        <Grid key={0} item>
-                            <h4>Token actions</h4>
-                            <p><b>Award</b> tokens to community members for their contributions and participation.</p>
-                            {/* TODO: - form validation */}
-                            <form onSubmit={this.awardTokens} id="awardTokens">
-                                <label> Address: <input type="text" name="address" /></label><br />
-                                <label> Amount: <input type="number" name="amount" /></label><br />
-                                <label> Reason: <input type="text" name="reason" /></label><br />
-                                <Button variant="outlined" color="primary" size="small" type="submit" id="awardButton">Award</Button>
-                            </form>
-                        </Grid>
-                    </Grid>
 
-                    <Grid container justify="left">
-                        <Grid key={0} item>
-                            <p><b>Burn</b> tokens belonging to community members.</p>
-                            <form onSubmit={this.burnTokens} id="burnTokens">
-                                <label> Address: <input type="text" name="address" /></label><br />
-                                <label> Amount: <input type="number" name="amount" /></label><br />
-                                <Button variant="outlined" color="primary" size="small" type="submit" id="burnTokens">Burn</Button>
-                            </form>
-                        </Grid>
-                    </Grid>
-                    <Grid container justify="left">
-                        <Grid key={0} item>
-                            <h4>Admin Tools</h4>
+            <Pane padding={8} flex="1">
+                <Pane padding={14} marginBottom={16} background="greenTint" borderRadius={5} border="default">
+                    <Pane marginBottom={16}>
+                        <Heading size={400}>Grant tokens to community members</Heading>
+                    </Pane>
+                    <Pane>
+                        <form onSubmit={this.awardTokens} id="awardTokens">
+                            <TextInputField
+                                label="Member's address"
+                                placeholder="0x...."
+                                htmlFor="awardTokens"
+                                type="text"
+                                name="address"
+                            />
+                            <TextInputField
+                                label={"Amount of " + this.props.state.contract.tokenSymbol}
+                                placeholder="0.0"
+                                htmlFor="awardTokens"
+                                type="number"
+                                name="amount"
+                            />
+                            <TextInputField
+                                label="Reason for granting"
+                                placeholder="..."
+                                htmlFor="awardTokens"
+                                type="text"
+                                name="reason"
+                            />
+                            <Button type="submit" id="awardButton" marginLeft={8}>Grant</Button>
+                        </form>
+                    </Pane>
+                </Pane>
 
-                            <form onSubmit={this.checkAdmin} id="checkAdmin">
-                                <label> <b>Check</b> if address is admin: <input type="text" name="address" /></label><br />
-                                <Button variant="outlined" color="primary" size="small" type="submit">Check</Button>
-                            </form>
-                            <br />
+                <Pane padding={14} marginBottom={16} background="tint1" borderRadius={5} border="default">
+                    <Pane marginBottom={16}>
+                        <Heading size={400}>Add a new admin</Heading>
+                    </Pane>
+                    <Pane>
+                        <form onSubmit={this.addAdmin} id="addAdmin">
+                            <TextInputField
+                                label="Member's address"
+                                placeholder="0x...."
+                                htmlFor="addAdmin"
+                                type="text"
+                                name="address"
+                            />
+                            <TextInputField
+                                label="Reason for adding (optional)"
+                                placeholder="..."
+                                htmlFor="addAdmin"
+                                type="text"
+                                name="reason"
+                            />
+                            <Button type="submit" id="addAdmin" marginLeft={8}>Add</Button>
+                        </form>
+                    </Pane>
 
-                            <form onSubmit={this.addAdmin} id="addAdmin">
-                                <label> <b>Add</b> address as admin: <input type="text" name="address" /></label><br />
-                                <Button variant="outlined" color="primary" size="small" type="submit">Add Admin</Button>
-                            </form>
-                            <br />
+                    <Pane marginBottom={16} marginTop={32}>
+                        <Heading size={400}>Remove an admin</Heading>
+                    </Pane>
+                    <Pane>
+                        <form onSubmit={this.removeAdmin} id="removeAdmin">
+                            <TextInputField
+                                label="Member's address"
+                                placeholder="0x...."
+                                htmlFor="removeAdmin"
+                                type="text"
+                                name="address"
+                            />
+                            <TextInputField
+                                label="Reason for removing (optional)"
+                                placeholder="..."
+                                htmlFor="removeAdmin"
+                                type="text"
+                                name="reason"
+                            />
+                            <Button type="submit" id="removeAdmin" marginLeft={8}>Remove</Button>
+                        </form>
+                    </Pane>
 
-                            <form onSubmit={this.removeAdmin}>
-                                <label> <b>Remove</b> address as admin: <input type="text" name="address" /></label><br />
-                                <Button variant="outlined" color="primary" size="small" type="submit">Remove Admin</Button>
-                            </form>
+                    <Pane marginBottom={16} marginTop={32}>
+                        <Heading size={400}>Check if admin</Heading>
+                    </Pane>
+                    <Pane>
+                        <form onSubmit={this.checkAdmin} id="checkAdmin">
+                            <TextInputField
+                                label="Member's address"
+                                placeholder="0x...."
+                                htmlFor="checkAdmin"
+                                type="text"
+                                name="address"
+                            />
+                            <Button type="submit" id="checkAdmin" marginLeft={8}>Check</Button>
+                        </form>
+                    </Pane>
+                </Pane>
 
-                            <p></p>
+                <Pane padding={14} marginBottom={16} background="redTint" borderRadius={5} border="default">
+                    <Pane marginBottom={16}>
+                        <Heading size={400}>Burn tokens belonging to community members</Heading>
+                    </Pane>
+                    <Pane>
+                        <form onSubmit={this.burnTokens} id="burnTokens">
+                            <TextInputField
+                                label="Member's address"
+                                placeholder="0x...."
+                                htmlFor="burnTokens"
+                                type="text"
+                                name="address"
+                            />
+                            <TextInputField
+                                label={"Amount of " + this.props.state.contract.tokenSymbol}
+                                placeholder="0.0"
+                                htmlFor="burnTokens"
+                                type="number"
+                                name="amount"
+                            />
+                            <TextInputField
+                                label="Reason for burning"
+                                placeholder="..."
+                                htmlFor="burnTokens"
+                                type="text"
+                                name="reason"
+                            />
+                            <Button type="submit" id="burnTokens" marginLeft={8}>Burn</Button>
+                        </form>
+                    </Pane>
+                </Pane>
 
-                            {this.props.state.contract.contractEnabled ? (
-                                <Button variant="contained" color="primary" onClick={this.tokenEmergencyStop}> Activate Emergency Stop </Button>
-                            ) : (
-                                    <Button variant="contained" color="primary" onClick={this.tokenResumeContract}> Re-enable Contract </Button>
-                                )}
-                        </Grid>
-                    </Grid>
-                </Grid>
-            </Grid>
+                <Pane padding={14} marginBottom={16} background="redTint" borderRadius={5} border="default">
+                    <Pane marginBottom={16}>
+                        <Heading size={400}>Stop or Enable contract operations</Heading>
+                    </Pane>
+                    {this.props.state.contract.contractEnabled ? (
+                        <Button intent="danger" iconBefore="ban-circle" onClick={this.tokenEmergencyStop}> Activate Emergency Stop </Button>
+                    ) : (
+                        <Button intent="warning" iconBefore="warning-sign" onClick={this.tokenResumeContract}> Re-enable Contract </Button>
+                        )}
+                </Pane>
+            </Pane>
         )
     }
 }
