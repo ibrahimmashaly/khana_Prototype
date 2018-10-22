@@ -4,14 +4,15 @@ about: Suggest an idea for this project
 
 ---
 
-**Is your feature request related to a problem? Please describe.**
-A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
+### Background
+The background and context for why the solution should be implemented. Focus on the current problem.
 
-**Describe the solution you'd like**
-A clear and concise description of what you want to happen.
+### Solution
+The solution that solves the problem detailed above. Be as specific as possible (while still retaining flexibility for the person who will eventually complete the Grant
 
-**Describe alternatives you've considered**
-A clear and concise description of any alternative solutions or features you've considered.
+### Grant amount
+XXXX KHNA
+Only an admin can approve this amount to be awarded.
 
-**Additional context**
-Add any other context or screenshots about the feature request here.
+
+## Don't forget to add relevant 'labels' and 'projects' on the right sidebar --->
