@@ -8,6 +8,7 @@ class App extends Component {
 
     // Update this value so we don't have to transverse the entire blockchain to find events
     contractDeployBlockNumber = 3009494 // KHNA on Rinkeby
+    grantsUrl = "https://www.meetup.com/Permissionless-Society/"
 
     render() {
         return (
@@ -15,6 +16,7 @@ class App extends Component {
                 token={BlockDamToken}
                 bondingCurve={BondingCurveFunds}
                 startingBlock={this.contractDeployBlockNumber}
+                grantsUrl={this.grantsUrl}
             />
         )
     }
