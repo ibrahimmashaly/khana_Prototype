@@ -33,10 +33,10 @@ class Dapp extends Component {
             this.updateLoadingMessage("Something went wrong 🤔", web3Instance.toString(), 4)
             return
         }
-        this.setState({web3: web3Instance.web3})
+        this.setState({web3: web3Instance})
 
         // Instantiate contract
-        TokenShared.setupContracts(this.state, web3Instance.web3, this.tokenContract, this.bondingCurveContract, this.props.startingBlock, this.callbackSetState)        
+        TokenShared.setupContracts(this.state, web3Instance, this.tokenContract, this.bondingCurveContract, this.props.startingBlock, this.callbackSetState)        
     }
 
     // Used by other components to update parent state including contracts
