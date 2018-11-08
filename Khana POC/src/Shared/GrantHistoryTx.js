@@ -2,8 +2,10 @@ import React, { Component } from 'react'
 import ipfs from '../utils/ipfs'
 import {endPoints, copy} from '../utils/helpers'
 import Linkify from 'react-linkify'
+import {isMobileOnly} from 'react-device-detect'
+import {shortenAddress} from '../utils/helpers'
 
-import {Table, Pane, Button, Popover, Position, IconButton, Menu, Text, Heading} from 'evergreen-ui';
+import { Table, Pane, Button, Popover, Position, IconButton, Menu, Text, Heading, Paragraph} from 'evergreen-ui';
 
 class GrantHistoryTx extends Component {
     
@@ -115,12 +117,21 @@ class GrantHistoryTx extends Component {
                     key={tx.ethTxHash} 
                     onClick={() => {
                         // alert('selected')
+                    }}
+                    height='auto'>
+                    <Table.TextCell flexBasis={88} flexShrink={1} flexGrow={0}>{shortenAddress(tx.minter, false)}</Table.TextCell>
+                    <Table.TextCell flexBasis={80} flexShrink={1} flexGrow={0}>{tx.amount} {this.props.contract.tokenSymbol}</Table.TextCell>
+                    <Table.TextCell flexBasis={88} flexShrink={1} flexGrow={0}>{shortenAddress(tx.awardedTo, false)}</Table.TextCell>
+                    <Table.TextCell flexBasis={88} flexShrink={1} flexGrow={0} isNumber={true}>{tx.blockNumber}</Table.TextCell>
+                    {!isMobileOnly &&
+                        <Table.Cell>
+                            <Paragraph width={300} marginY={8}>
+                                <Linkify properties={{ target: '_blank' }}>
+                                    {tx.reason != null ? tx.reason : "Reason not yet loaded"}
+                                </Linkify>
+                            </Paragraph>
+                        </Table.Cell>
                     }
-                    }>
-                    <Table.TextCell flexBasis={64} flexShrink={1}>{tx.minter}</Table.TextCell>
-                    <Table.TextCell flexBasis={72} flexShrink={1} flexGrow={1}>{tx.amount} {this.props.contract.tokenSymbol}</Table.TextCell>
-                    <Table.TextCell flexBasis={64} flexShrink={1} flexGrow={1}>{tx.awardedTo}</Table.TextCell>
-                    <Table.TextCell flexBasis={64} flexShrink={1} isNumber={true}>{tx.blockNumber}</Table.TextCell>
                     <Table.Cell width={48} flex="none">
                         <Popover
                             content={this.renderRowMenu(tx)}
@@ -134,7 +145,7 @@ class GrantHistoryTx extends Component {
         })
 
         return (
-            <Pane>
+            <Pane alignItems="center" display="flex" justifyContent="center">
                 { sortedTxList.length === 0 &&
                     <Pane margin={16}>
                         <Heading size={400}>No transaction history</Heading>
@@ -142,13 +153,16 @@ class GrantHistoryTx extends Component {
                 }
                 
                 {this.props.contract.latestIpfsHash && sortedTxList.length > 0 &&
-                    <Pane>
+                    <Pane width={isMobileOnly ? 344 : 800}>
                         <Table borderRadius={5} border="default" marginBottom={16}>
                             <Table.Head background="greenTint">
-                                <Table.TextHeaderCell flexBasis={64} flexShrink={1}>Granter</Table.TextHeaderCell>
-                                <Table.TextHeaderCell flexBasis={72} flexShrink={1} flexGrow={1}>Amount</Table.TextHeaderCell>
-                                <Table.TextHeaderCell flexBasis={64} flexShrink={1} flexGrow={1}>Receiver</Table.TextHeaderCell>
-                                <Table.TextHeaderCell flexBasis={64} flexShrink={1}>Block#</Table.TextHeaderCell>
+                                <Table.TextHeaderCell flexBasis={88} flexShrink={1} flexGrow={0}>Granter</Table.TextHeaderCell>
+                                <Table.TextHeaderCell flexBasis={80} flexShrink={1} flexGrow={0}>Amount</Table.TextHeaderCell>
+                                <Table.TextHeaderCell flexBasis={88} flexShrink={1} flexGrow={0}>Receiver</Table.TextHeaderCell>
+                                <Table.TextHeaderCell flexBasis={88} flexShrink={1} flexGrow={0}>Block#</Table.TextHeaderCell>
+                                {!isMobileOnly &&
+                                    <Table.TextHeaderCell width={300}>Grant Reason</Table.TextHeaderCell>
+                                }
                                 <Table.TextHeaderCell width={48} flex="none"> </Table.TextHeaderCell>
                             </Table.Head>
 

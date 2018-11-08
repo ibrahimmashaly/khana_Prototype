@@ -12,22 +12,25 @@ export let endPoints = {
 // Clipboard operations
 //
 
-export function shortenAddress(address) {
+export function shortenAddress(address, showCopyToClipboard = true) {
     if (address == null) { return null }
     let shortAddress = address.substr(0, 6) + '...' + address.substr(address.length - 4)
 
     return (
-    <CopyToClipboard 
-        text={address}
-        onCopy={() => {
-            notificationNotify('Copied to clipboard!')
-        }}>
-
-        <span>
-            <a href={endPoints.blockExplorer + "address/" + address} target="_blank">{shortAddress}</a>  <Icon icon="clipboard" />
-        </span>
-            
-    </CopyToClipboard >
+        showCopyToClipboard ? (
+            <span>
+            <a href={endPoints.blockExplorer + "address/" + address} target="_blank">{shortAddress}</a>
+            <CopyToClipboard 
+                text={address}
+                onCopy={() => {
+                    notificationNotify('Copied to clipboard!')
+                }}>
+                <Icon icon="clipboard" appearance="minimal" height={24}/>
+            </CopyToClipboard >
+            </span>
+        ) : (
+            <a href={endPoints.blockExplorer + "address/" + address} target="_blank">{shortAddress}</a>
+        )
     )
 }
 
