@@ -1,5 +1,6 @@
 import React, { Component } from 'react'
 import {shortenAddress} from '../utils/helpers';
+import Audit from './Audit';
 
 import { Pane, Heading, Text, TextInputField, Button, Alert } from 'evergreen-ui';
 
@@ -42,6 +43,13 @@ class UserDashboard extends Component {
         }).catch((error) => {
             this.props.updateState('Sell calculation error', error.message, 3)
         })
+    }
+
+    getAuditFile = async (event) => {
+        event.preventDefault();
+        let audit = new Audit()
+        let file = await audit.getAuditFile(this.props.state.contract.latestIpfsHash)
+        console.log(file)
     }
 
     render() {
@@ -109,8 +117,9 @@ class UserDashboard extends Component {
                                 </Text>
                                 <p></p>
                                 <Text>Sell your tokens to the bonding curve below</Text>
+                                <Heading> WIP button function!</Heading>
                                 
-                                <form onSubmit={this.sellTokens} id="sell-tokens">
+                                    <form onSubmit={this.getAuditFile} id="sell-tokens">
                                     <Pane flex={1} alignItems="baseline" display="flex">
                                         <TextInputField
                                             label=""
