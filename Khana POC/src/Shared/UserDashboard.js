@@ -47,9 +47,60 @@ class UserDashboard extends Component {
 
     getAuditFile = async (event) => {
         event.preventDefault();
-        let audit = new Audit()
-        let file = await audit.getAuditFile(this.props.state.contract.latestIpfsHash)
-        console.log(file)
+        let audit = new Audit(this.props)
+        let file = await audit.getAuditFile() // aray
+
+        let newSingleAward = {
+            "timeStamp": 1337,
+            "toAddress": "0xFakeToAddress",
+            "adminAddress": "0xFakeAdminAddress",
+            "amount": "9999999999",
+            "reason": "Testing insert to 0 for tokenActivity/awards/"
+        }
+
+        file.tokenActivity.awards.unshift(newSingleAward)
+
+        let newBulkAward = {
+            "timeStamp": 1540929958416,
+            "toAddress": [
+                "0xFakeToAddress1",
+                "0xFakeToAddress2"
+            ],
+            "adminAddress": "0xFakeAdminAddress",
+            "sameAmount": false,
+            "amountEach": [
+                "31000000000000000000",
+                "62000000000000000000"
+            ],
+            "reason": "Attending meetup with different participations"
+        }
+
+        file.tokenActivity.awardsBulk.unshift(newBulkAward)
+
+        let newBurns = {
+            "timeStamp": 1540929958416,
+            "toAddress": "0xFakeToAddress",
+            "adminAddress": "0xFakeAdminAddress",
+            "amount": "9000000000000000000",
+            "reason": "Example burn"
+        }
+
+        file.tokenActivity.burns.unshift(newBurns)
+
+        // tokenAdmin etc
+        let auditChain = file.tokenAdmin.auditChain
+        if (auditChain.length >= 5) {
+            auditChain.pop()
+        }
+        auditChain.unshift("QmThisShouldBeFirstAuditChainHash")
+
+        file.tokenAdmin.auditChain = auditChain
+
+        // Change vault address
+        file.tokenInfo.vaultAddress = "0xFakeVaultAddress"
+
+        let ipfsHash = await audit.createNewAuditFile(file)
+        console.log(ipfsHash)
     }
 
     render() {
