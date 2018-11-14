@@ -14,18 +14,29 @@ class TokenShared extends Component {
             tokenName: '',
             tokenSymbol: '',
             totalSupply: 0,
+            tokenAddress: '',
+            vaultAddress: '',
+            logicAddress: '',
             ethAmount: 0,
             contractEnabled: null,
             latestIpfsHash: null,
-            ipfsLogHistory: [{
-                blockNumber: 0,
-                minter: null,
-                awardedTo: null,
-                amount: 0,
-                ipfsHash: '',
-                ethTxHash: '',
-                reason: ''
-            }]
+            ipfsLogHistory: {
+                khanaInfo: { version: 0, lastUpgradeBlock: 0},
+                tokenInfo: {},
+                tokenAdmin: {
+                    addAdmin: [],
+                    removeAdmin: [],
+                    emergencyStop: [],
+                    moveFunds: [],
+                    auditChain: [],
+                    previousImportedAuditHashes: []
+                },
+                tokenActivity: {
+                    awards: [],
+                    awardsBulk: [],
+                    burns: []
+                }
+            }
         },
         user: {
             accounts: null,
@@ -36,8 +47,9 @@ class TokenShared extends Component {
         app: {
             status: 'Loading...',
             isLoading: true,
+            version: 0.1
         },
-        navigation: 0, // Used for knowing where we are in the navigation 'tabs'
+        navigation: 2, // Used for knowing where we are in the navigation 'tabs'
     }
 
     static setupDefaultState = async () => {
@@ -93,24 +105,24 @@ class TokenShared extends Component {
             }).then((isAdmin) => {
 
                 let awardEventsAll = contractInstance.LogAwarded({}, {
-                    fromBlock: contractDeployBlockNumber,
+                    fromBlock: 0, //contractDeployBlockNumber,
                     toBlock: 'latest'
                 })
 
                 awardEventsAll.get((err, result) => {
-
                     if (err) {
                         callback(null,"Error loading log events")
                     }
 
-                    let logHistory = result.map((log) => {
+                    let logAwardHistory = result.map((log) => {
                         return {
                             blockNumber: log.blockNumber,
                             minter: log.args.minter,
                             awardedTo: log.args.awardedTo,
                             amount: (web3.fromWei(log.args.amount, 'ether')).toString(10),
                             ipfsHash: log.args.ipfsHash,
-                            ethTxHash: log.transactionHash
+                            ethTxHash: log.transactionHash,
+                            reason: ''
                         }
                     })
 
@@ -125,14 +137,16 @@ class TokenShared extends Component {
                     updatedState.contract.fundsInstance = fundsInstance
                     updatedState.contract.tokenName = name
                     updatedState.contract.tokenSymbol = symbol
-                    updatedState.contract.ipfsLogHistory = []
+                    updatedState.contract.tokenAddress = contractInstance.address
+                    updatedState.contract.vaultAddress = fundsInstance.address
+                    updatedState.contract.logicAddress = contractInstance.address
 
                     updatedState.user.accounts = accounts
                     updatedState.user.isAdmin = isAdmin
 
                     if (ipfsEventLogged != null) {
                         updatedState.contract.latestIpfsHash = ipfsEventLogged.args.ipfsHash
-                        updatedState.contract.ipfsLogHistory = logHistory
+                        updatedState.contract.ipfsLogHistory.tokenActivity.awards = logAwardHistory
                     }
                     callback(updatedState, null, true)
                 })

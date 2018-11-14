@@ -8,8 +8,7 @@ class GrantHistory extends Component {
         return(
             <Pane padding={8} flex="1">
                 <GrantHistoryTx
-                    user={this.props.user}
-                    contract={this.props.contract}
+                    state={this.props.state}
                     updateLoadingMessage={this.props.updateLoadingMessage}
                     updateState={this.props.updateState}
                     updateStaticState={this.props.updateStaticState}

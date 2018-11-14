@@ -32,14 +32,14 @@
             {
                 "timeStamp": 1540929958416,
                 "adminAddress": "0x19a9dc5c38febcdc61893df3a3c00ff484d0991b",
+                "isActivated": true,
                 "reason": "Test emergency stop"
-            }
-        ],
-        "emergencyRecovery": [
+            },
             {
                 "timeStamp": 1540929958416,
                 "adminAddress": "0x19a9dc5c38febcdc61893df3a3c00ff484d0991b",
-                "reason": "Test emergency recovery"
+                "isActivated": false,
+                "reason": "Test emergency de-activation"
             }
         ],
         "moveFunds" : [

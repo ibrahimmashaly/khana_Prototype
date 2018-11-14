@@ -307,4 +307,8 @@ contract('KhanaToken', function(accounts) {
 
     });
 
+    it("should be able to correct log IPFS events", async () => {
+        
+    })
+
 })

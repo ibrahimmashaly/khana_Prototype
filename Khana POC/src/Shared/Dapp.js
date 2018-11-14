@@ -126,7 +126,7 @@ class Dapp extends Component {
                      { /* Grant History section */}
                     {this.state.navigation === 2 &&
                         <GrantHistory
-                            contract={this.state.contract}
+                            state={this.state}
                             updateLoadingMessage={this.updateLoadingMessage}
                             updateStaticState={this.updateStaticState}
                             updateState={this.updateState}

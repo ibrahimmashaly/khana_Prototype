@@ -1,17 +1,18 @@
 import React, { Component } from 'react'
-import ipfs from '../utils/ipfs';
+import ipfs from '../utils/ipfs'
+import Audit from './Audit'
 
-import { Pane, TextInputField, Heading, Button } from 'evergreen-ui';
+import { Pane, TextInputField, Heading, Button } from 'evergreen-ui'
 
 class Admin extends Component {
 
-    awardTokens = (event) => {
-        event.preventDefault();
-        document.getElementById("awardButton").disabled = true;
+    awardTokens = async (event) => {
+        event.preventDefault()
+        document.getElementById("awardButton").disabled = true
 
         let web3 = this.props.state.web3
 
-        // Set state
+        // Set variables
         let address = event.target.address.value
         let amount = web3.toWei(event.target.amount.value, 'ether')
         let reason = event.target.reason.value
@@ -21,89 +22,134 @@ class Admin extends Component {
             return
         }
 
-        let getIpfsFile = new Promise((ipfsResult) => {
-            let latestIpfsHash = this.props.state.contract.latestIpfsHash
-            let newContents = { "timeStamp": + Date.now(), "toAddress": address, "fromAddress": this.props.state.user.accounts[0], "amount": amount, "reason": reason }
+        // Record the award details on IPFS audit log
+        let auditInstance = new Audit(this.props)
+        let ipfsHash = await auditInstance.recordAward(address, amount, reason)
+        this.props.updateLoadingMessage('Entry added to IPFS audit file successfully', 'Please confirm the ethereum transaction via your wallet and wait for it to confirm.', 0)
 
-            // If there is no existing hash, then we are running for first time and need to create log file on IPFS
-            if (!latestIpfsHash) {
-                let ipfsContent = {
-                    path: '/' + this.props.state.contract.tokenName,
-                    content: Buffer.from('[ ' + JSON.stringify(newContents) + ' ]')
+        // Make contract changes and attach the IPFS hash permanently to an admin tx record (and to the events log)
+        let khanaTokenInstance = this.props.state.contract.instance
+        let accounts = this.props.state.user.accounts
+
+        khanaTokenInstance.award(address, amount, ipfsHash, { from: accounts[0], gas: 100000, gasPrice: web3.toWei(5, 'gwei') }).then((txResult) => {
+
+            this.props.updateLoadingMessage('Waiting for transaction to confirm...', '', 0)
+
+            let awardedEvent = khanaTokenInstance.LogAwarded({ fromBlock: 'latest' }, (err, response) => {
+
+                // Ensure we're not detecting old events in previous (i.e. the current) block. 
+                // This bug is more relevant to dev environment where all recent blocks could be emitting this event, causing bugs.
+                if (response.blockNumber >= txResult.receipt.blockNumber) {
+
+                    // Update latest ipfsHash and history
+                    let contractState = this.props.state.contract
+                    contractState.latestIpfsHash = ipfsHash
+                    contractState.ipfsLogHistory.tokenActivity.awards.push({
+                        blockNumber: response.blockNumber,
+                        minter: response.args.minter,
+                        awardedTo: response.args.awardedTo,
+                        amount: (web3.fromWei(response.args.amount, 'ether')).toString(10),
+                        ipfsHash: response.args.ipfsHash,
+                        ethTxHash: response.transactionHash,
+                        reason: ''
+                    })
+
+                    this.setState({ contract: contractState })
+                    this.props.updateState('Success!', 'Transaction confirmed and tokens granted. See Grant History for more details.', 1);
+
+                    console.log(ipfsHash)
+                    awardedEvent.stopWatching()
+                    document.getElementById("awardButton").disabled = false;
                 }
-
-                this.props.updateLoadingMessage('Creating inital IPFS file (may take a while)...')
-
-                // Write description to IPFS, return hash
-                ipfsResult(ipfs.add(ipfsContent))
-            } else {
-                // Get most recent version of logs first
-                ipfs.files.cat('/ipfs/' + this.props.state.contract.latestIpfsHash).then((file) => {
-
-                    // Parse the history as JSON, then add an entry to the start of array
-                    let auditHistory = JSON.parse(file.toString('utf8'))
-                    auditHistory.unshift(newContents)
-
-                    //Set up IPFS details
-                    let ipfsContent = {
-                        path: '/' + this.props.state.contract.tokenName,
-                        content: Buffer.from(JSON.stringify(auditHistory))
-                    }
-
-                    this.props.updateLoadingMessage('Adding details to IPFS file (may take a while)...')
-
-                    // Write description to IPFS, return hash
-                    ipfsResult(ipfs.add(ipfsContent))
-                })
-            }
-        })
-
-        getIpfsFile.then((ipfsResult) => {
-
-            // Then store the recent tx and record on blockchain (and events log)
-            let ipfsHash = ipfsResult[0].hash
-            this.props.updateLoadingMessage('Entry added to IPFS audit file successfully', 'Please confirm the ethereum transaction via your wallet and wait for it to confirm.', 0)
-
-            // Make contract changes
-            let khanaTokenInstance = this.props.state.contract.instance
-            let accounts = this.props.state.user.accounts
-
-            khanaTokenInstance.award(address, amount, ipfsHash, { from: accounts[0], gas: 100000, gasPrice: web3.toWei(5, 'gwei') }).then((txResult) => {
-
-                this.props.updateLoadingMessage('Waiting for transaction to confirm...', '', 0)
-
-                let awardedEvent = khanaTokenInstance.LogAwarded({ fromBlock: 'latest' }, (err, response) => {
-
-                    // Ensure we're not detecting old events in previous (i.e. the current) block. This bug is more relevant to dev environment where all recent blocks could be emitting this event, causing bugs.
-                    if (response.blockNumber >= txResult.receipt.blockNumber) {
-
-                        // Update latest ipfsHash and history
-                        let contractState = this.props.state.contract
-                        contractState.latestIpfsHash = ipfsHash
-                        contractState.ipfsLogHistory.push({
-                            blockNumber: response.blockNumber,
-                            minter: response.args.minter,
-                            awardedTo: response.args.awardedTo,
-                            amount: (web3.fromWei(response.args.amount, 'ether')).toString(10),
-                            ipfsHash: response.args.ipfsHash,
-                            ethTxHash: response.transactionHash
-                        })
-
-                        this.setState({ contract: contractState })
-                        this.props.updateState('Success!', 'Transaction confirmed and tokens granted. See Grant History for more details.', 1);
-
-                        awardedEvent.stopWatching()
-                        document.getElementById("awardButton").disabled = false;
-                    }
-                })
-            }).catch((error) => {
-                this.props.updateState('Awarding error', error.message, 3)
-                document.getElementById("awardButton").disabled = false;
             })
         }).catch((error) => {
-            this.props.updateState('IPFS file error', error.message, 3)
+            this.props.updateState('Awarding error', error.message, 3)
             document.getElementById("awardButton").disabled = false;
         })
+
+        // let getIpfsFile = new Promise((ipfsResult) => {
+        //     let latestIpfsHash = this.props.state.contract.latestIpfsHash
+        //     let newContents = { "timeStamp": + Date.now(), "toAddress": address, "fromAddress": this.props.state.user.accounts[0], "amount": amount, "reason": reason }
+
+        //     // If there is no existing hash, then we are running for first time and need to create log file on IPFS
+        //     if (!latestIpfsHash) {
+        //         let ipfsContent = {
+        //             path: '/' + this.props.state.contract.tokenName,
+        //             content: Buffer.from('[ ' + JSON.stringify(newContents) + ' ]')
+        //         }
+
+        //         this.props.updateLoadingMessage('Creating inital IPFS file (may take a while)...')
+
+        //         // Write description to IPFS, return hash
+        //         ipfsResult(ipfs.add(ipfsContent))
+        //     } else {
+        //         // Get most recent version of logs first
+        //         ipfs.files.cat('/ipfs/' + this.props.state.contract.latestIpfsHash).then((file) => {
+
+        //             // Parse the history as JSON, then add an entry to the start of array
+        //             let auditHistory = JSON.parse(file.toString('utf8'))
+        //             auditHistory.unshift(newContents)
+
+        //             //Set up IPFS details
+        //             let ipfsContent = {
+        //                 path: '/' + this.props.state.contract.tokenName,
+        //                 content: Buffer.from(JSON.stringify(auditHistory))
+        //             }
+
+        //             this.props.updateLoadingMessage('Adding details to IPFS file (may take a while)...')
+
+        //             // Write description to IPFS, return hash
+        //             ipfsResult(ipfs.add(ipfsContent))
+        //         })
+        //     }
+        // })
+
+        // getIpfsFile.then((ipfsResult) => {
+
+        //     // Then store the recent tx and record on blockchain (and events log)
+        //     let ipfsHash = ipfsResult[0].hash
+        //     this.props.updateLoadingMessage('Entry added to IPFS audit file successfully', 'Please confirm the ethereum transaction via your wallet and wait for it to confirm.', 0)
+
+        //     // Make contract changes
+        //     let khanaTokenInstance = this.props.state.contract.instance
+        //     let accounts = this.props.state.user.accounts
+
+        //     khanaTokenInstance.award(address, amount, ipfsHash, { from: accounts[0], gas: 100000, gasPrice: web3.toWei(5, 'gwei') }).then((txResult) => {
+
+        //         this.props.updateLoadingMessage('Waiting for transaction to confirm...', '', 0)
+
+        //         let awardedEvent = khanaTokenInstance.LogAwarded({ fromBlock: 'latest' }, (err, response) => {
+
+        //             // Ensure we're not detecting old events in previous (i.e. the current) block. This bug is more relevant to dev environment where all recent blocks could be emitting this event, causing bugs.
+        //             if (response.blockNumber >= txResult.receipt.blockNumber) {
+
+        //                 // Update latest ipfsHash and history
+        //                 let contractState = this.props.state.contract
+        //                 contractState.latestIpfsHash = ipfsHash
+        //                 contractState.ipfsLogHistory.push({
+        //                     blockNumber: response.blockNumber,
+        //                     minter: response.args.minter,
+        //                     awardedTo: response.args.awardedTo,
+        //                     amount: (web3.fromWei(response.args.amount, 'ether')).toString(10),
+        //                     ipfsHash: response.args.ipfsHash,
+        //                     ethTxHash: response.transactionHash
+        //                 })
+
+        //                 this.setState({ contract: contractState })
+        //                 this.props.updateState('Success!', 'Transaction confirmed and tokens granted. See Grant History for more details.', 1);
+
+        //                 awardedEvent.stopWatching()
+        //                 document.getElementById("awardButton").disabled = false;
+        //             }
+        //         })
+        //     }).catch((error) => {
+        //         this.props.updateState('Awarding error', error.message, 3)
+        //         document.getElementById("awardButton").disabled = false;
+        //     })
+        // }).catch((error) => {
+        //     this.props.updateState('IPFS file error', error.message, 3)
+        //     document.getElementById("awardButton").disabled = false;
+        // })
     }
 
     burnTokens = async(event) => {

@@ -1,5 +1,6 @@
 import React, { Component } from 'react'
-import ipfs from '../utils/ipfs'
+import Audit from './Audit'
+
 import {endPoints, copy} from '../utils/helpers'
 import Linkify from 'react-linkify'
 import {isMobileOnly} from 'react-device-detect'
@@ -12,21 +13,23 @@ class GrantHistoryTx extends Component {
     getIpfsReasons = async (ipfsHash) => {
         this.props.updateLoadingMessage('Loading grant reasons...', '', 0)
 
-        ipfs.files.cat('/ipfs/' + this.props.contract.latestIpfsHash, (err, file) => {
-            if (err) {
-                this.props.updateState("Grant file Error", err.message, 3)
-            }
+        let auditInstance = new Audit(this.props)
+        console.log(this.props)
+        let auditJson = await auditInstance.getAuditJson()
+        console.log(auditJson)
 
-            // Parse JSON to object
-            let auditLog = JSON.parse(file.toString('utf8'))
 
-            let contractState = this.props.contract
-            contractState.ipfsLogHistory.forEach((value, index) => {
-                value.reason = auditLog[index].reason
-            })
-            this.props.updateStaticState({ contract: contractState })
-            this.props.updateState('Grant reasons loaded', '', 1)
+        // TODO: - get other events from other awards (e.g. burns etc)
+
+
+
+
+        let contractState = this.props.state.contract
+        contractState.ipfsLogHistory.tokenActivity.awards.forEach((value, index) => {
+            value.reason = auditJson.tokenActivity.awards[index].reason
         })
+        this.props.updateStaticState({ contract: contractState })
+        this.props.updateState('Grant reasons loaded', '', 1)
     }
 
     createMenuItemToCopy = (text) => {
@@ -46,7 +49,7 @@ class GrantHistoryTx extends Component {
                     marginTop={16}
                     marginLeft={16}
                 >
-                {tx.reason != null ? (
+                {tx.reason != '' ? (
                     <Pane padding={4}>
                         <Text size={400}>
                             <Linkify properties={{target: '_blank'}}>
@@ -105,8 +108,10 @@ class GrantHistoryTx extends Component {
         )
     }
 
+    // TODO - set up for other Logged events such as burn etc
+
     render() {
-        let sortedTxList = this.props.contract.ipfsLogHistory.sort((a, b) => {
+        let sortedTxList = this.props.state.contract.ipfsLogHistory.tokenActivity.awards.sort((a, b) => {
             return a.blockNumber < b.blockNumber ? 1 : -1
         })
 
@@ -120,14 +125,14 @@ class GrantHistoryTx extends Component {
                     }}
                     height='auto'>
                     <Table.TextCell flexBasis={88} flexShrink={1} flexGrow={0}>{shortenAddress(tx.minter, false)}</Table.TextCell>
-                    <Table.TextCell flexBasis={80} flexShrink={1} flexGrow={0}>{tx.amount} {this.props.contract.tokenSymbol}</Table.TextCell>
+                    <Table.TextCell flexBasis={80} flexShrink={1} flexGrow={0}>{tx.amount} {this.props.state.contract.tokenSymbol}</Table.TextCell>
                     <Table.TextCell flexBasis={88} flexShrink={1} flexGrow={0}>{shortenAddress(tx.awardedTo, false)}</Table.TextCell>
                     <Table.TextCell flexBasis={88} flexShrink={1} flexGrow={0} isNumber={true}>{tx.blockNumber}</Table.TextCell>
                     {!isMobileOnly &&
                         <Table.Cell>
                             <Paragraph width={300} marginY={8}>
                                 <Linkify properties={{ target: '_blank' }}>
-                                    {tx.reason != null ? tx.reason : "Reason not yet loaded"}
+                                    {tx.reason != '' ? tx.reason : "Reason not yet loaded"}
                                 </Linkify>
                             </Paragraph>
                         </Table.Cell>
@@ -152,7 +157,7 @@ class GrantHistoryTx extends Component {
                     </Pane>
                 }
                 
-                {this.props.contract.latestIpfsHash && sortedTxList.length > 0 &&
+                {this.props.state.contract.latestIpfsHash && sortedTxList.length > 0 &&
                     <Pane width={isMobileOnly ? 344 : 800}>
                         <Table borderRadius={5} border="default" marginBottom={16}>
                             <Table.Head background="greenTint">
