@@ -167,15 +167,16 @@ contract KhanaToken is MintableToken {
      * @notice This is not a 'transactional' award, meaning that if there is 'wrong' address
      * among the ones provided, the whole award will still be successful
      * Approach is inspired by HUMAN Protocol but having better record of failing awards
-     * @notice The length of accounts MUST be not higher than BULK_AWARD_MAX_COUNT
+     * @notice The length of accounts and amounts MUST be not higher than BULK_AWARD_MAX_COUNT
+     * @notice _amounts must either be an array of 1 or an array with the same length as accounts
      * @param _accounts The addresses of the users to awarded.
-     * @param _amount The amount to be awarded to each address.
+     * @param _amounts The amounts to be awarded to each address.
      * @param _ipfsHash The IPFS hash of the latest audit log, which includes the
      * details and reason for the current awards of tokens.
      */
     function awardBulk(
         address[] _accounts,
-        uint256 _amount,
+        uint256[] _amounts,
         string _ipfsHash
     )
         public
@@ -183,24 +184,30 @@ contract KhanaToken is MintableToken {
         contractIsEnabled
         returns (uint)
     {
-        require(_amount > 0, "The rewarding amount is missing");
         require(_accounts.length < BULK_AWARD_MAX_COUNT, "Too many accounts");
-        uint _bulkCount = 0;
+        require(_amounts.length < BULK_AWARD_MAX_COUNT, "Too many amounts");
+        require(_amounts.length == 1 || _amounts.length == _accounts.length, "Invalid amounts given");
+        
+        bool sameBulkAmount = _amounts.length == 1;
+        uint bulkCount = 0;
+        
         for (uint i = 0; i < _accounts.length; ++i) {
-            bool _success = awardQuiet(_accounts[i], _amount, _ipfsHash);
-            if (_success) {
-                _bulkCount++;
+            uint256 amount = sameBulkAmount ? _amounts[0] : _amounts[i];
+            bool success = _awardQuiet(_accounts[i], amount, _ipfsHash);
+            if (success) {
+                bulkCount++;
             } else {
-                emit LogBulkAwardedFailure(_accounts[i]);
+                emit LogBulkAwardedFailure(_accounts[i], amount);
             }
         }
-        emit LogBulkAwardedSummary(_bulkCount);
-        return _bulkCount;
+        emit LogBulkAwardedSummary(bulkCount, msg.sender, _ipfsHash);
+        return bulkCount;
     }
 
-    function awardQuiet(address _account, uint256 _amount, string _ipfsHash) internal returns (bool) {
+    function _awardQuiet(address _account, uint256 _amount, string _ipfsHash) internal returns (bool) {
         if (_account == address(0)) return false; // No awards for the black hole
         if (_account == address(this)) return false; // No awards for this token
+        if (_amount <= 0) return false; // No awards for zero or less amounts
         award(_account, _amount, _ipfsHash);
         return true;
     }

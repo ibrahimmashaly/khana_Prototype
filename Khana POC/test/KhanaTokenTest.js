@@ -291,33 +291,86 @@ contract('KhanaToken', function(accounts) {
         assert.equal(bobsNewBalance, 0, "user should not have any tokens remaining");
     });
 
-    it("should be able to award in a bulk", async () => {
+    it("should be able to award in bulk (same award)", async () => {
+        const balanceBefore = (await khana.balanceOf(bob)).toNumber()
+
         let addresses = [];
         let singleAwardsGas = 0;
+        const amount = web3.toWei("10", "szabo")
         const numAwards = 10;
         for (i = 0; i < numAwards; i++) {
             addresses.push(bob);
-            let tx = await khana.award(bob, web3.toWei("10", "szabo"), "ipfsHash_placeholder");
+            let tx = await khana.award(bob, amount, ipfsHash);
             let receipt = await web3.eth.getTransactionReceipt(tx.tx);
             singleAwardsGas = singleAwardsGas + receipt.gasUsed;
         }
-        let tx = await khana.awardBulk(addresses, web3.toWei("10", "szabo"), "ipfsHash_placeholder");
+
+        let tx = await khana.awardBulk(addresses, [amount], ipfsHash);
         let receipt = await web3.eth.getTransactionReceipt(tx.tx);
         let bulkAwardsGas = receipt.gasUsed;
 
-        //see how much bulk is more gas-efficient than single ones
-        //console.log(`Bulk is ${singleAwardsGas/bulkAwardsGas} times more gas-efficient for ${numAwards} awards`);
+        // See how much bulk is more gas-efficient than single awards
+        // console.log(`Bulk award is ${singleAwardsGas/bulkAwardsGas} times more gas-efficient for ${numAwards} awards`);
 
         const BulkAwardedSummary = await khana.LogBulkAwardedSummary();
         const logBulkAwardedSummary = await new Promise((resolve, reject) => {
             BulkAwardedSummary.watch((error, log) => { resolve(log);});
         });
-        assert.equal(numAwards, logBulkAwardedSummary.args.bulkCount, "Hmm not everyone was awarded in bulk")
 
+        assert.equal(numAwards, logBulkAwardedSummary.args.bulkCount, "Not all addresses were awarded in bulk transaction, check awardBulk method")
+        assert.equal(ipfsHash, logBulkAwardedSummary.args.ipfsHash, "Bulk award event ipfsHash not emitted correctly, check awardBulk method")
+    
+        const expectedBalanceDiff = 2 * (numAwards * web3.toWei("10", "szabo"))
+        const balanceAfter = (await khana.balanceOf(bob)).toNumber()
+        assert.equal(expectedBalanceDiff, balanceAfter - balanceBefore, "Expected different balance from bulk awards")
     });
 
-    it("should be able to correct log IPFS events", async () => {
+    it("should be able to award in bulk (different awards)", async () => {
+        const balanceBeforeOwner = (await khana.balanceOf(owner)).toNumber()
+        const balanceBeforeAlice = (await khana.balanceOf(alice)).toNumber()
+        const balanceBeforeBob = (await khana.balanceOf(bob)).toNumber()
+
+        const amountForOwner = web3.toWei("10", "szabo")
+        const amountForAlice = web3.toWei("100", "szabo")
+        const amountForBob = web3.toWei("40", "szabo")
+
+        let addresses = [owner, alice, bob];
+
+        // 1. Should revert when address.length !== amounts.length && amounts.length > 1
+        let amounts = [amountForOwner, amountForAlice]
+
+        let revertError;
+        try {
+            await khana.awardBulk(addresses, amounts, ipfsHash);
+        } catch (error) {
+            revertError = error;
+        }
+        assert(revertError, "Expected bulkAward error but did not get one");
+
+        // 2. Should succeed when lengths are the same
+        amounts.push(amountForBob);
+        let tx = await khana.awardBulk(addresses, amounts, ipfsHash);
+
+        const BulkAwardedSummary = await khana.LogBulkAwardedSummary();
+        const log = await new Promise((resolve, reject) => {
+            BulkAwardedSummary.watch((error, log) => { resolve(log); });
+        });
+
+        assert.equal(amounts.length, log.args.bulkCount, "Not all addresses were awarded in bulk transaction, check awardBulk method")
+        assert.equal(ipfsHash, log.args.ipfsHash, "Bulk award event ipfsHash not emitted correctly, check awardBulk method")
+
+        const balanceAfterOwner = (await khana.balanceOf(owner)).toNumber()
+        const balanceAfterAlice = (await khana.balanceOf(alice)).toNumber()
+        const balanceAfterBob = (await khana.balanceOf(bob)).toNumber()
         
-    })
+        // 3. Check the correct awards were given
+        assert.equal(balanceAfterOwner - balanceBeforeOwner, amountForOwner, "Owner bulk award amount incorrect")
+        assert.equal(balanceAfterAlice - balanceBeforeAlice, amountForAlice, "Alice bulk award amount incorrect")
+        assert.equal(balanceAfterBob - balanceBeforeBob, amountForBob, "Bob bulk award amount incorrect")
+    });
+
+    // it("should be able to correct log IPFS events", async () => {
+
+    // })
 
 })
