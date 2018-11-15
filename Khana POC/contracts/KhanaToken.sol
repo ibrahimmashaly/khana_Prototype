@@ -32,21 +32,30 @@ contract KhanaToken is MintableToken {
 
     mapping (address => bool) public adminAccounts;
 
-    event LogContractDisabled();
-    event LogContractEnabled();
-    event LogAdminAdded(address indexed account);
-    event LogAdminRemoved(address indexed account);
+    event LogContractDisabled(string ipfsHash);
+    event LogContractEnabled(string ipfsHash);
+    event LogAdminAdded(
+        address indexed account,
+        string ipfsHash
+    );
+    event LogAdminRemoved(
+        address indexed account,
+        string ipfsHash
+    );
     event LogAwarded(
         address indexed awardedTo,
         address indexed minter,
-        uint amount,
+        uint256 amount,
         string ipfsHash
     );
     event LogBulkAwardedFailure(
-        address failed
+        address failed,
+        uint256 amount
     );
     event LogBulkAwardedSummary(
-        uint bulkCount
+        uint bulkCount,
+        address indexed minter,
+        string ipfsHash
     );
     event LogSell(
         address sellingAccount,
@@ -59,7 +68,12 @@ contract KhanaToken is MintableToken {
     );
     event LogBurned(
         address indexed burnFrom,
-        uint amount
+        uint256 amount,
+        string ipfsHash
+    );
+
+    event LogArbitary(
+        uint256 amount
     );
 
     /**
@@ -74,7 +88,7 @@ contract KhanaToken is MintableToken {
      * @dev Throws if called by a non-admin account.
      */
     modifier onlyAdmins() {
-        require(adminAccounts[msg.sender] == true);
+        require(adminAccounts[msg.sender] == true, "Only admins can perform this action");
         _;
     }
 
@@ -85,7 +99,7 @@ contract KhanaToken is MintableToken {
      * but expand the usecase slightly with more admins with mint permissions.
      */
     modifier hasMintPermission() {
-        require(adminAccounts[msg.sender] == true);
+        require(adminAccounts[msg.sender] == true, "Only admins can perform this action");
         _;
     }
 
@@ -93,7 +107,7 @@ contract KhanaToken is MintableToken {
      * @dev Throws if called when contract has been disabled via 'emergencyStop()'.
      */
     modifier contractIsEnabled() {
-        require(contractEnabled);
+        require(contractEnabled, "Emergency stop is activated");
         _;
     }
 
@@ -101,7 +115,7 @@ contract KhanaToken is MintableToken {
      * @dev Throws if called when contract has been disabled via 'emergencyStop()'.
      */
     modifier fundsContractIsValid() {
-        require(fundsContract != address(0));
+        require(fundsContract != address(0), "Invalid funds contract");
         _;
     }
 
@@ -207,7 +221,7 @@ contract KhanaToken is MintableToken {
      */
     function sell(uint256 _amount) public contractIsEnabled fundsContractIsValid returns (bool) {
         uint256 tokenBalanceOfSender = balanceOf(msg.sender);
-        require(_amount > 0 && tokenBalanceOfSender >= _amount);
+        require(_amount > 0 && tokenBalanceOfSender >= _amount, "Invalid sell amount");
 
         uint256 redeemableEth = calculateSellReturn(_amount, tokenBalanceOfSender);
         _burn(msg.sender, _amount);
@@ -235,8 +249,8 @@ contract KhanaToken is MintableToken {
         view
         returns (uint256)
     {
-        require(fundsContract.balance >= minimumEthBalance);
-        require(_tokenBalance >= _sellAmount);
+        require(fundsContract.balance >= minimumEthBalance, "Not enough funds in contract");
+        require(_tokenBalance >= _sellAmount, "Invalid sell amount");
 
         uint256 tokenSupply = getSupply();
 
@@ -266,21 +280,24 @@ contract KhanaToken is MintableToken {
         emit LogFundsContractChanged(oldContract, _contract);
     }
 
+    // TODO: - moveFunds function when changing contracts
+
     /**
      * @dev An emergency stop that can only be called by the admins.
      * @notice This is an alternative to 'finishMinting()' in MintableToken.sol
      * to enable admins to stop the minting process (not just the owner), and also
      * disables selling the token into the bonding curve contract.
      * Having a valid 'fundsContract' is optional to set the emergency stop.
+     * @param _ipfsHash The IPFS hash of the latest audit log, including this action
      * @return A bool indicating if the emergency stop was successful.
      */
     // override onlyOwner in mintableToken
-    function emergencyStop() public onlyAdmins contractIsEnabled returns (bool) {
+    function emergencyStop(string _ipfsHash) public onlyAdmins contractIsEnabled returns (bool) {
         contractEnabled = false;
         if (fundsContract != address(0)) {
             BondingCurveFunds(fundsContract).emergencyStop();
         }
-        emit LogContractDisabled();
+        emit LogContractDisabled(_ipfsHash);
         return true;
     }
 
@@ -288,22 +305,24 @@ contract KhanaToken is MintableToken {
      * @dev Restore contract functionality, only callable by admins.
      * @notice A valid 'fundsContract' must be set before resuming. This can be
      * done via setFundsContract(address).
+     * @param _ipfsHash The IPFS hash of the latest audit log, including this action
      * @return A bool indicating if the resuming of minting was successful.
      */
-    function resumeContract() public onlyAdmins fundsContractIsValid returns (bool) {
+    function resumeContract(string _ipfsHash) public onlyAdmins fundsContractIsValid returns (bool) {
         contractEnabled = true;
         BondingCurveFunds(fundsContract).resumeContract();
-        emit LogContractEnabled();
+        emit LogContractEnabled(_ipfsHash);
         return true;
     }
 
     /**
      * @dev Add an admin.
      * @param _account The address of the new admin.
+     * @param _ipfsHash The IPFS hash of the latest audit log, including this action
      */
-    function addAdmin(address _account) public onlyAdmins {
+    function addAdmin(address _account, string _ipfsHash) public onlyAdmins {
         adminAccounts[_account] = true;
-        emit LogAdminAdded(_account);
+        emit LogAdminAdded(_account, _ipfsHash);
     }
 
     /**
@@ -312,11 +331,12 @@ contract KhanaToken is MintableToken {
      * power to restore things, so cannot be removed as an admin. If the owner
      * role needs to be transfered, then call 'transferOwnership()' in Ownable.sol.
      * @param _account The address of the admin to be removed.
+     * @param _ipfsHash The IPFS hash of the latest audit log, including this action
      */
-    function removeAdmin(address _account) public onlyAdmins {
-        require(_account != owner);
+    function removeAdmin(address _account, string _ipfsHash) public onlyAdmins {
+        require(_account != owner, "Owner account cannot be removed as admin");
         adminAccounts[_account] = false;
-        emit LogAdminRemoved(_account);
+        emit LogAdminRemoved(_account, _ipfsHash);
     }
 
     /**
@@ -336,13 +356,15 @@ contract KhanaToken is MintableToken {
      * For now, only the owner can burn tokens
      * @param _account The address of the account to burn tokens.
      * @param _amount The amount of tokens to burn.
+     * @param _ipfsHash The IPFS hash of the latest audit log, including this action
      */
     function burn(
         address _account,
-        uint256 _amount
+        uint256 _amount,
+        string _ipfsHash
     ) public onlyOwner {
         _burn(_account, _amount);
-        emit LogBurned(_account, _amount);
+        emit LogBurned(_account, _amount, _ipfsHash);
     }
 
     /**

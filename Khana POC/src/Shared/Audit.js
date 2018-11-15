@@ -75,7 +75,7 @@ class Audit extends Component {
     createAndUploadNewAuditFile = async (auditDict) => {
 
         let ipfsContent = {
-            path: '/khana' + this.props.state.contract.tokenName,
+            path: '/khana/' + this.props.state.contract.tokenName,
             content: Buffer.from(JSON.stringify(auditDict))
         }
 
@@ -83,6 +83,7 @@ class Audit extends Component {
 
         // Write description to IPFS, return hash
         const results = await ipfs.add(ipfsContent)
+
         return results[0].hash
     }
 
@@ -105,8 +106,6 @@ class Audit extends Component {
         let latestIpfsHash = this.props.state.contract.latestIpfsHash
         let auditJson
 
-        // auditJson = await this.createGenesisAuditJson()
-
         // If there is no existing hash, then we are running for first time and need to create genesis audit json
         if (!latestIpfsHash) {
             auditJson = await this.createGenesisAuditJson()
@@ -117,6 +116,8 @@ class Audit extends Component {
 
         return auditJson
     }
+
+    // @dev: returns IPFS hash of new audit file with record of award
 
     recordAward = async (toAddress, amount, reason) => {
         let auditHistory = await this.getAuditJson()
@@ -138,8 +139,21 @@ class Audit extends Component {
 
     }
 
-    recordBurn = async () => {
+    // @dev: returns IPFS hash of new audit file with record of burn
 
+    recordBurn = async (toAddress, amount, reason) => {
+        let auditHistory = await this.getAuditJson()
+
+        let newBurn = {
+            "timeStamp": Date.now(),
+            "toAddress": toAddress,
+            "adminAddress": this.props.state.user.currentAddress,
+            "amount": amount,
+            "reason": reason
+        }
+
+        auditHistory.tokenActivity.burns.unshift(newBurn)
+        return await this.createAndUploadNewAuditFile(auditHistory)
     }
 
     recordAddAdmin = async () => {

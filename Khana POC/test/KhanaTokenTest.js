@@ -1,3 +1,4 @@
+
 var KhanaToken = artifacts.require("./KhanaToken.sol");
 var BondingCurveFunds = artifacts.require("./BondingCurveFunds.sol");
 
@@ -10,6 +11,8 @@ contract('KhanaToken', function(accounts) {
     let khana;
     let fundsContract;
 
+    const ipfsHash = "QmThisIsATestIpfsHash"
+
     beforeEach('setup contract for each test', async () => {
         khana = await KhanaToken.deployed();
     });
@@ -20,13 +23,14 @@ contract('KhanaToken', function(accounts) {
     });
 
     it("should be able to set new admin (as owner)", async () => {
-        await khana.addAdmin(alice, {from: owner});
+        await khana.addAdmin(alice, ipfsHash, {from: owner});
         const AdminAdded = await khana.LogAdminAdded();
         const log = await new Promise((resolve, reject) => {
             AdminAdded.watch((error, log) => { resolve(log);});
         });
 
         assert.equal(log.args.account, alice, "AdminAdded event account address incorrectly emitted");
+        assert.equal(log.args.ipfsHash, ipfsHash, "AdminAdded event ipfsHash incorrectly emitted");
 
         const aliceIsAdmin = await khana.checkIfAdmin(alice);
         assert.equal(aliceIsAdmin, true, 'user should be an admin');
@@ -34,13 +38,13 @@ contract('KhanaToken', function(accounts) {
 
     it("should be able to award new tokens (as owner)", async () => {
         bobBalance += 10000000000000000000
-        await khana.award(bob, 10000000000000000000, "ipfsHash_placeholder", {from: owner});
+        await khana.award(bob, 10000000000000000000, ipfsHash, {from: owner});
         const Awarded = await khana.LogAwarded();
         const log = await new Promise ((resolve, reject) => {
             Awarded.watch((error, log) => { resolve(log);});
         });
 
-        const expectedEventResult = {awardedTo: bob, minter: owner, amount: 10000000000000000000, ipfsHash: "ipfsHash_placeholder"};
+        const expectedEventResult = {awardedTo: bob, minter: owner, amount: 10000000000000000000, ipfsHash: ipfsHash};
 
         const logAccountAddress = log.args.awardedTo;
         const logMinterAddress = log.args.minter;
@@ -55,13 +59,13 @@ contract('KhanaToken', function(accounts) {
 
     it("should be able to award new tokens (as new admin)", async () => {
         bobBalance += 10000000000000000000
-        await khana.award(bob, 10000000000000000000, "ipfsHash_placeholder", {from: alice});
+        await khana.award(bob, 10000000000000000000, ipfsHash, {from: alice});
         const Awarded = await khana.LogAwarded();
         const log = await new Promise ((resolve, reject) => {
             Awarded.watch((error, log) => { resolve(log);});
         });
 
-        const expectedEventResult = {awardedTo: bob, minter: alice, amount: 10000000000000000000, ipfsHash: "ipfsHash_placeholder"};
+        const expectedEventResult = {awardedTo: bob, minter: alice, amount: 10000000000000000000, ipfsHash: ipfsHash};
 
         const logAccountAddress = log.args.awardedTo;
         const logMinterAddress = log.args.minter;
@@ -75,26 +79,28 @@ contract('KhanaToken', function(accounts) {
     });
 
     it("should be able to set new admin (as new admin)", async () => {
-        await khana.addAdmin(bob, {from: alice});
+        await khana.addAdmin(bob, ipfsHash, {from: alice});
         const AdminAdded = await khana.LogAdminAdded();
         const log = await new Promise((resolve, reject) => {
             AdminAdded.watch((error, log) => { resolve(log);});
         });
 
         assert.equal(log.args.account, bob, "AdminAdded event account address incorrectly emitted");
+        assert.equal(log.args.ipfsHash, ipfsHash, "AdminAdded event ipfsHash incorrectly emitted");
 
         const bobIsAdmin = await khana.checkIfAdmin(bob);
         assert.equal(bobIsAdmin, true, 'user should be an admin');
     });
 
     it("should be able to remove admin (as new admin)", async () => {
-        await khana.removeAdmin(bob, {from: alice});
+        await khana.removeAdmin(bob, ipfsHash, {from: alice});
         const AdminRemoved = await khana.LogAdminRemoved();
         const log = await new Promise((resolve, reject) => {
             AdminRemoved.watch((error, log) => { resolve(log);});
         });
 
         assert.equal(log.args.account, bob, "AdminRemoved event account address incorrectly emitted");
+        assert.equal(log.args.ipfsHash, ipfsHash, "AdminRemoved event ipfsHash incorrectly emitted");
 
         const bobIsNotAdmin = await khana.checkIfAdmin(bob);
         assert.equal(bobIsNotAdmin, false, 'user should not be an admin');
@@ -103,7 +109,7 @@ contract('KhanaToken', function(accounts) {
     it("should not be able to remove original owner (as new admin)", async () => {
         let revertError;
         try {
-            await khana.removeAdmin(owner, {from: alice});
+            await khana.removeAdmin(owner, ipfsHash, {from: alice});
         } catch (error) {
             revertError = error;
         }
@@ -111,19 +117,19 @@ contract('KhanaToken', function(accounts) {
     });
 
     it("should not be able to award any more tokens (emergency stop)", async () => {
-        await khana.emergencyStop({from: owner});
+        await khana.emergencyStop(ipfsHash, {from: owner});
         const ContractDisabled = await khana.LogContractDisabled();
         const log = await new Promise((resolve, reject) => {
             ContractDisabled.watch((error, log) => { resolve(log);});
         });
 
-        assert.equal(log.event, 'LogContractDisabled', "Emergency stop event event incorrectly emitted");
+        assert.equal(log.args.ipfsHash, ipfsHash, "Emergency stop ipfsHash incorrectly emitted");
 
         // Try to award Bob tokens
 
         let revertError;
         try {
-            await khana.award(bob, 100, "ipfsHash_placeholder", {from: owner});
+            await khana.award(bob, 100, ipfsHash, {from: owner});
         } catch (error) {
             revertError = error;
         }
@@ -156,24 +162,24 @@ contract('KhanaToken', function(accounts) {
     });
 
     it("should be able restore awarding of tokens (contract enabled)", async () => {
-        await khana.resumeContract({from: owner});
+        await khana.resumeContract(ipfsHash, {from: owner});
         const ContractEnabled = await khana.LogContractEnabled();
         const log = await new Promise((resolve, reject) => {
             ContractEnabled.watch((error, log) => { resolve(log);});
         });
 
-        assert.equal(log.event, 'LogContractEnabled', "Resume contract event incorrectly emitted");
+        assert.equal(log.args.ipfsHash, ipfsHash, "Resume ipfsHash incorrectly emitted");
 
         // Now award the tokens to Bob
 
         bobBalance += 10000000000000000000
-        await khana.award(bob, 10000000000000000000, "ipfsHash_placeholder", {from: owner});
+        await khana.award(bob, 10000000000000000000, ipfsHash, {from: owner});
         const Awarded = await khana.LogAwarded();
         const logAward = await new Promise ((resolve, reject) => {
             Awarded.watch((error, log) => { resolve(log);});
         });
 
-        const expectedEventResult = {awardedTo: bob, minter: owner, amount: 10000000000000000000, ipfsHash: "ipfsHash_placeholder"};
+        const expectedEventResult = {awardedTo: bob, minter: owner, amount: 10000000000000000000, ipfsHash: ipfsHash};
 
         const logAccountAddress = logAward.args.awardedTo;
         const logMinterAddress = logAward.args.minter;
@@ -187,13 +193,13 @@ contract('KhanaToken', function(accounts) {
     });
 
     it("should be able to fund bonding curve by sending ETH (contract enabled)", async () => {
-        await khana.resumeContract({from: owner});
+        await khana.resumeContract(ipfsHash, {from: owner});
         const ContractEnabled = await khana.LogContractEnabled();
         const log = await new Promise((resolve, reject) => {
             ContractEnabled.watch((error, log) => { resolve(log);});
         });
 
-        assert.equal(log.event, 'LogContractEnabled', "Resume contract event incorrectly emitted");
+        assert.equal(log.args.ipfsHash, ipfsHash, "Resume contract ipfsHash incorrectly emitted");
 
         // Fund the contract with 10 ETH (this should forward to the funding contract)
         await khana.sendTransaction({from: owner, value: 10000000000000000000});
@@ -241,13 +247,14 @@ contract('KhanaToken', function(accounts) {
     });
 
     it("should be able to remove admin (as owner)", async () => {
-        await khana.removeAdmin(alice, {from: owner});
+        await khana.removeAdmin(alice, ipfsHash, {from: owner});
         const AdminRemoved = await khana.LogAdminRemoved();
         const log = await new Promise((resolve, reject) => {
             AdminRemoved.watch((error, log) => { resolve(log);});
         });
 
         assert.equal(log.args.account, alice, "AdminRemoved event account address incorrectly emitted");
+        assert.equal(log.args.ipfsHash, ipfsHash, "AdminRemoved event ipfsHash incorrectly emitted");
 
         const aliceIsNotAdmin = await khana.checkIfAdmin(alice);
         assert.equal(aliceIsNotAdmin, false, 'user should not be an admin');
@@ -262,20 +269,22 @@ contract('KhanaToken', function(accounts) {
     });
 
     it("should be able to burn tokens (as owner)", async () => {
-        await khana.burn(bob, bobBalance, {from: owner});
+        await khana.burn(bob, bobBalance, ipfsHash, {from: owner});
 
         const Burned = await khana.LogBurned();
         const log = await new Promise((resolve, reject) => {
             Burned.watch((error, log) => { resolve(log);});
         });
 
-        const expectedEventResult = { burnFrom: bob, amount: bobBalance }
+        const expectedEventResult = { burnFrom: bob, amount: bobBalance, ipfsHash: ipfsHash }
 
         const logBurnFromAddress = log.args.burnFrom;
         const logAmount = log.args.amount.toNumber();
+        const logIpfsHash = log.args.ipfsHash;
 
         assert.equal(expectedEventResult.burnFrom, logBurnFromAddress, "Burn event from property not emitted correctly, check burn method");
         assert.equal(expectedEventResult.amount, logAmount, "Burn event value property not emitted correctly, check burn method");
+        assert.equal(expectedEventResult.ipfsHash, logIpfsHash, "Burn event ipfsHash not emitted correctly, check burn method");
 
         // balanceOf function is inherited from StandardToken.sol
         const bobsNewBalance = (await khana.balanceOf(bob)).toNumber();
