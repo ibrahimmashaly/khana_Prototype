@@ -85,7 +85,10 @@ class Audit extends Component {
     createAndUploadNewAuditFile = async (auditDict) => {
 
         let currentIpfsHash = this.props.state.contract.latestIpfsHash
-        auditDict.tokenAdmin.auditChain.unshift(currentIpfsHash)
+        console.log(currentIpfsHash)
+        if (currentIpfsHash != null) {
+            auditDict.tokenAdmin.auditChain.unshift(currentIpfsHash)
+        }
 
         if (auditDict.tokenAdmin.auditChain.length > 5) {
             auditDict.tokenAdmin.auditChain.pop()
@@ -235,17 +238,17 @@ class Audit extends Component {
 
     /**
      * @dev Used for activating or de-activating the emergency stop
-     * @param isActiving Bool of what action is being taken when calling.
+     * @param isActivating Bool of what action is being taken when calling.
      * @param reasons The reason for the removal.
      * @return IPFS hash of new audit file.
     */
-    recordEmergencyStop = async (isActiving, reason) => {
+    recordEmergencyStop = async (isActivating, reason) => {
         let auditHistory = await this.getAuditJson()
 
         let emergencyStop = {
             "timeStamp": Date.now(),
             "adminAddress": this.props.state.user.currentAddress,
-            "isActivated": isActiving,
+            "isActivated": isActivating,
             "reason": reason
         }
 

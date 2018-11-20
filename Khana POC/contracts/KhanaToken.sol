@@ -72,8 +72,12 @@ contract KhanaToken is MintableToken {
         string ipfsHash
     );
 
-    event LogArbitary(
-        uint256 amount
+    /**
+     * @notice We want a single emitted event to record the most recent ipfs hash
+     * @notice Other events also contain the hash for redundancy event checking purposes 
+     */
+    event LogAuditHash(
+        string ipfsHash
     );
 
     /**
@@ -157,6 +161,7 @@ contract KhanaToken is MintableToken {
     {
         mint(_account, _amount);
         emit LogAwarded(_account, msg.sender, _amount, _ipfsHash);
+        emit LogAuditHash(_ipfsHash);
     }
 
     /**
@@ -201,6 +206,7 @@ contract KhanaToken is MintableToken {
             }
         }
         emit LogBulkAwardedSummary(bulkCount, msg.sender, _ipfsHash);
+        // No need to emit LogAuditHash(_ipfsHash) as award() already emits the event via _awardQuiet()
         return bulkCount;
     }
 
@@ -305,6 +311,7 @@ contract KhanaToken is MintableToken {
             BondingCurveFunds(fundsContract).emergencyStop();
         }
         emit LogContractDisabled(_ipfsHash);
+        emit LogAuditHash(_ipfsHash);
         return true;
     }
 
@@ -319,6 +326,7 @@ contract KhanaToken is MintableToken {
         contractEnabled = true;
         BondingCurveFunds(fundsContract).resumeContract();
         emit LogContractEnabled(_ipfsHash);
+        emit LogAuditHash(_ipfsHash);
         return true;
     }
 
@@ -330,6 +338,7 @@ contract KhanaToken is MintableToken {
     function addAdmin(address _account, string _ipfsHash) public onlyAdmins {
         adminAccounts[_account] = true;
         emit LogAdminAdded(_account, _ipfsHash);
+        emit LogAuditHash(_ipfsHash);
     }
 
     /**
@@ -344,6 +353,7 @@ contract KhanaToken is MintableToken {
         require(_account != owner, "Owner account cannot be removed as admin");
         adminAccounts[_account] = false;
         emit LogAdminRemoved(_account, _ipfsHash);
+        emit LogAuditHash(_ipfsHash);
     }
 
     /**
@@ -372,6 +382,7 @@ contract KhanaToken is MintableToken {
     ) public onlyOwner {
         _burn(_account, _amount);
         emit LogBurned(_account, _amount, _ipfsHash);
+        emit LogAuditHash(_ipfsHash);
     }
 
     /**

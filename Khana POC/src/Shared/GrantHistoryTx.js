@@ -184,7 +184,7 @@ class GrantHistoryTx extends Component {
                                 marginLeft={8}
                                 iconBefore="document-open"
                                 onClick={() => {
-                                    let url = endPoints.ipfsEndpoint + sortedTxList[0].ipfsHash
+                                    let url = endPoints.ipfsEndpoint + this.props.state.contract.latestIpfsHash
                                     window.open(url, "_blank")
                                 }}
                             >

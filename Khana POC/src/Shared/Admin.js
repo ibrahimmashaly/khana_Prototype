@@ -1,9 +1,13 @@
 import React, { Component } from 'react'
 import Audit from './Audit'
 
-import { Pane, TextInputField, Heading, Button } from 'evergreen-ui'
+import { Pane, Text, TextInputField, Heading, Button } from 'evergreen-ui'
 
 class Admin extends Component {
+
+    updateState = async (newState) => {
+
+    }
 
     awardTokens = async (event) => {
         event.preventDefault()
@@ -20,11 +24,13 @@ class Admin extends Component {
             this.props.updateState('All details must be filled in to award tokens', '', 2)
             return
         }
-
+        
         // Record the award details on IPFS audit log
         let auditInstance = new Audit(this.props)
         let ipfsHash = await auditInstance.recordAward(address, amount, reason)
         this.props.updateLoadingMessage('Entry added to IPFS audit file successfully', 'Please confirm the ethereum transaction via your wallet and wait for it to confirm.', 0)
+
+        console.log(ipfsHash)
 
         // Make contract changes and attach the IPFS hash permanently to an admin tx record (and to the events log)
         let khanaTokenInstance = this.props.state.contract.instance
@@ -56,7 +62,6 @@ class Admin extends Component {
                     this.setState({ contract: contractState })
                     this.props.updateState('Success!', 'Transaction confirmed and tokens granted. See Grant History for more details.', 1);
 
-                    console.log(ipfsHash)
                     awardedEvent.stopWatching()
                     document.getElementById("awardButton").disabled = false;
                 }
@@ -64,6 +69,55 @@ class Admin extends Component {
         }).catch((error) => {
             this.props.updateState('Awarding error', error.message, 3)
             document.getElementById("awardButton").disabled = false;
+        })
+    }
+
+    bulkAwardTokens = async (event) => {
+        event.preventDefault()
+        document.getElementById("bulkAwardButton").disabled = true
+
+        let web3 = this.props.state.web3
+
+        let addresses = String(event.target.addresses.value).split(',').map(address => address.replace(/\s/g, ""))
+        let amounts = String(event.target.amounts.value).split(',').map(amount => web3.toWei(amount, 'ether'))
+        let reason = event.target.reason.value
+
+        console.log(addresses)
+        console.log(amounts)
+        
+        if (addresses.length === 0 || amounts.length === 0 || reason.length === 0) {
+            this.props.updateState('All details must be filled in to award tokens', '', 2)
+            return
+        }
+
+        // Record the award details on IPFS audit log
+        let auditInstance = new Audit(this.props)
+        let ipfsHash = await auditInstance.recordBulkAward(addresses, amounts, reason)
+        this.props.updateLoadingMessage('Entry added to IPFS audit file successfully', 'Please confirm the ethereum transaction via your wallet and wait for it to confirm.', 0)
+
+        console.log(ipfsHash)
+
+
+        // Make contract changes and attach the IPFS hash permanently to an admin tx record (and to the events log)
+        let khanaTokenInstance = this.props.state.contract.instance
+        let accounts = this.props.state.user.accounts
+
+        khanaTokenInstance.awardBulk(addresses, amounts, ipfsHash, { from: accounts[0], gas: 300000, gasPrice: web3.toWei(5, 'gwei') }).then((txResult) => {
+
+            this.props.updateLoadingMessage('Waiting for transaction to confirm...')
+
+            let bulkAwardEvent = khanaTokenInstance.LogBulkAwardedSummary({ fromBlock: 'latest' }, (err, response) => {
+
+                // Ensure we're not detecting old events in previous (i.e. the current) block. This bug is more relevant to dev environment where all recent blocks could be emitting this event, causing bugs.
+                if (response.blockNumber >= txResult.receipt.blockNumber) {
+                    this.props.updateState('Success!', 'Transaction confirmed and tokens bulk awarded.', 1);
+                    bulkAwardEvent.stopWatching()
+                    document.getElementById("bulkAwardButton").disabled = false;
+                }
+            })
+        }).catch((error) => {
+            this.props.updateState('Bulk awarding error', error.message, 3)
+            document.getElementById("bulkAwardButton").disabled = false;
         })
     }
 
@@ -86,7 +140,7 @@ class Admin extends Component {
         let khanaTokenInstance = this.props.state.contract.instance
         let accounts = this.props.state.user.accounts
 
-        khanaTokenInstance.burn(address, amount, { from: accounts[0], gas: 100000, gasPrice: web3.toWei(5, 'gwei') }).then((txResult) => {
+        khanaTokenInstance.burn(address, amount, ipfsHash, { from: accounts[0], gas: 100000, gasPrice: web3.toWei(5, 'gwei') }).then((txResult) => {
 
             this.props.updateLoadingMessage('Waiting for transaction to confirm...')
 
@@ -121,9 +175,18 @@ class Admin extends Component {
         event.preventDefault();
         this.props.updateLoadingMessage('Adding user as an admin...')
 
+        let address = event.target.address.value
+        let reason = event.target.reason.value
+
+        // Record the details on IPFS audit log
+        let auditInstance = new Audit(this.props)
+        let ipfsHash = await auditInstance.recordAddAdmin(address, reason)
+        this.props.updateLoadingMessage('New admin recorded to IPFS audit file successfully', 'Please confirm the ethereum transaction via your wallet and wait for it to confirm.', 0)
+
         let khanaTokenInstance = this.props.state.contract.instance
         let accounts = this.props.state.user.accounts
-        khanaTokenInstance.addAdmin(event.target.address.value, { from: accounts[0], gas: 100000, gasPrice: this.props.state.web3.toWei(5, 'gwei') }).then(() => {
+
+        khanaTokenInstance.addAdmin(address, ipfsHash, { from: accounts[0], gas: 100000, gasPrice: this.props.state.web3.toWei(5, 'gwei') }).then(() => {
             this.props.updateLoadingMessage('Waiting for transaction to confirm')
 
             let addedEvent = khanaTokenInstance.LogAdminAdded({ fromBlock: 'latest' }, (err, response) => {
@@ -139,9 +202,18 @@ class Admin extends Component {
         event.preventDefault()
         this.props.updateLoadingMessage('Removing user as an admin...')
 
+        let address = event.target.address.value
+        let reason = event.target.reason.value
+
+        // Record the details on IPFS audit log
+        let auditInstance = new Audit(this.props)
+        let ipfsHash = await auditInstance.recordRemoveAdmin(address, reason)
+        this.props.updateLoadingMessage('Remove admin recorded to IPFS audit file successfully', 'Please confirm the ethereum transaction via your wallet and wait for it to confirm.', 0)
+
         let khanaTokenInstance = this.props.state.contract.instance
         let accounts = this.props.state.user.accounts
-        khanaTokenInstance.removeAdmin(event.target.address.value, { from: accounts[0], gas: 100000, gasPrice: this.props.state.web3.toWei(5, 'gwei') }).then(() => {
+
+        khanaTokenInstance.removeAdmin(address, ipfsHash, { from: accounts[0], gas: 100000, gasPrice: this.props.state.web3.toWei(5, 'gwei') }).then(() => {
             this.props.updateLoadingMessage('Waiting for transaction to confirm')
 
             let removedEvent = khanaTokenInstance.LogAdminRemoved({ fromBlock: 'latest' }, (err, response) => {
@@ -153,14 +225,21 @@ class Admin extends Component {
         })
     }
 
-    tokenEmergencyStop = async () => {
+    tokenEmergencyStop = async (event) => {
         event.preventDefault();
         this.props.updateLoadingMessage('Processing emergency stop...')
+
+        let reason = event.target.reason.value
+
+        // Record the details on IPFS audit log
+        let auditInstance = new Audit(this.props)
+        let ipfsHash = await auditInstance.recordEmergencyStop(true, reason)
+        this.props.updateLoadingMessage('Emergency stop recorded to IPFS audit file successfully', 'Please confirm the ethereum transaction via your wallet and wait for it to confirm.', 0)
 
         let khanaTokenInstance = this.props.state.contract.instance
         let accounts = this.props.state.user.accounts
 
-        khanaTokenInstance.emergencyStop({ from: accounts[0], gas: 100000, gasPrice: this.props.state.web3.toWei(5, 'gwei') }).then((success) => {
+        khanaTokenInstance.emergencyStop(ipfsHash, { from: accounts[0], gas: 100000, gasPrice: this.props.state.web3.toWei(5, 'gwei') }).then((success) => {
             this.props.updateLoadingMessage('Waiting for transaction to confirm...')
 
             let disabledEvent = khanaTokenInstance.LogContractDisabled({ fromBlock: 'latest' }, (err, response) => {
@@ -172,14 +251,21 @@ class Admin extends Component {
         })
     }
 
-    tokenResumeContract = async () => {
+    tokenResumeContract = async (event) => {
         event.preventDefault();
-        this.props.updateLoadingMessage('Re-enabling token minting...')
+        this.props.updateLoadingMessage('Re-enabling contracts...')
+
+        let reason = event.target.reason.value
+
+        // Record the details on IPFS audit log
+        let auditInstance = new Audit(this.props)
+        let ipfsHash = await auditInstance.recordEmergencyStop(false, reason)
+        this.props.updateLoadingMessage('Re-enabling recorded to IPFS audit file successfully', 'Please confirm the ethereum transaction via your wallet and wait for it to confirm.', 0)
 
         let khanaTokenInstance = this.props.state.contract.instance
         let accounts = this.props.state.user.accounts
 
-        khanaTokenInstance.resumeContract({ from: accounts[0], gas: 100000, gasPrice: this.props.state.web3.toWei(5, 'gwei') }).then((success) => {
+        khanaTokenInstance.resumeContract(ipfsHash, { from: accounts[0], gas: 100000, gasPrice: this.props.state.web3.toWei(5, 'gwei') }).then((success) => {
             this.props.updateLoadingMessage('Waiting for transaction to confirm...')
 
             let enabledEvent = khanaTokenInstance.LogContractEnabled({ fromBlock: 'latest' }, (err, response) => {
@@ -192,12 +278,19 @@ class Admin extends Component {
     }
 
     render() {
+
+        let contractEnabled = this.props.state.contract.contractEnabled
+        let emergencyStopId = contractEnabled ? "tokenEmergencyStop" : "tokenResumeContract"
+
         return (
 
             <Pane padding={8} flex="1">
+
+                {/* award individual tokens */}
+
                 <Pane padding={14} marginBottom={16} background="greenTint" borderRadius={5} border="default">
                     <Pane marginBottom={16}>
-                        <Heading size={400}>Grant tokens to community members</Heading>
+                        <Heading size={400}>Grant tokens to a community member</Heading>
                     </Pane>
                     <Pane>
                         <form onSubmit={this.awardTokens} id="awardTokens">
@@ -227,6 +320,43 @@ class Admin extends Component {
                     </Pane>
                 </Pane>
 
+                {/* bulk award tokens */}
+
+                <Pane padding={14} marginBottom={16} background="greenTint" borderRadius={5} border="default">
+                    <Pane marginBottom={16}>
+                        <Heading size={400}>Bulk grant tokens to community members</Heading>
+                        <Text>The 'member addresses' should be comma separated</Text>
+                    </Pane>
+                    <Pane>
+                        <form onSubmit={this.bulkAwardTokens} id="bulkAwardTokens">
+                            <TextInputField
+                                label="Member addresses"
+                                placeholder="0x...."
+                                htmlFor="bulkAwardTokens"
+                                type="text"
+                                name="addresses"
+                            />
+                            <TextInputField
+                                label={"Amount of " + this.props.state.contract.tokenSymbol}
+                                placeholder="0.0"
+                                htmlFor="bulkAwardTokens"
+                                type="number"
+                                name="amounts"
+                            />
+                            <TextInputField
+                                label="Reason for bulk granting"
+                                placeholder="..."
+                                htmlFor="bulkAwardTokens"
+                                type="text"
+                                name="reason"
+                            />
+                            <Button type="submit" id="bulkAwardButton" marginLeft={8}>Bulk Grant</Button>
+                        </form>
+                    </Pane>
+                </Pane>
+
+                {/* Add new admin */}
+
                 <Pane padding={14} marginBottom={16} background="tint1" borderRadius={5} border="default">
                     <Pane marginBottom={16}>
                         <Heading size={400}>Add a new admin</Heading>
@@ -251,6 +381,8 @@ class Admin extends Component {
                         </form>
                     </Pane>
 
+                    {/* Remove admin */}
+
                     <Pane marginBottom={16} marginTop={32}>
                         <Heading size={400}>Remove an admin</Heading>
                     </Pane>
@@ -274,6 +406,8 @@ class Admin extends Component {
                         </form>
                     </Pane>
 
+                    {/* Check if admin */}
+
                     <Pane marginBottom={16} marginTop={32}>
                         <Heading size={400}>Check if admin</Heading>
                     </Pane>
@@ -290,6 +424,8 @@ class Admin extends Component {
                         </form>
                     </Pane>
                 </Pane>
+
+                {/* Burn tokens */}
 
                 <Pane padding={14} marginBottom={16} background="redTint" borderRadius={5} border="default">
                     <Pane marginBottom={16}>
@@ -323,15 +459,24 @@ class Admin extends Component {
                     </Pane>
                 </Pane>
 
+                {/* Emergency stop operations */}
+
                 <Pane padding={14} marginBottom={16} background="redTint" borderRadius={5} border="default">
                     <Pane marginBottom={16}>
                         <Heading size={400}>Stop or Enable contract operations</Heading>
                     </Pane>
-                    {this.props.state.contract.contractEnabled ? (
-                        <Button intent="danger" iconBefore="ban-circle" onClick={this.tokenEmergencyStop}> Activate Emergency Stop </Button>
-                    ) : (
-                        <Button intent="warning" iconBefore="warning-sign" onClick={this.tokenResumeContract}> Re-enable Contract </Button>
-                        )}
+                    <form onSubmit={contractEnabled ? this.tokenEmergencyStop : this.tokenResumeContract} id={emergencyStopId}>
+                        <TextInputField
+                            label={contractEnabled ? "Reason for activation" : "Reason for re-enabling"}
+                            placeholder="..."
+                            htmlFor={emergencyStopId}
+                            type="text"
+                            name="reason"
+                        />
+                        <Button intent={contractEnabled ? "danger" : "warning"} iconBefore={contractEnabled ? "ban-circle" : "warning-sign"} type="submit" id={emergencyStopId} marginLeft={8}>
+                            {contractEnabled ? "Activate Emergency Stop" : "Re-enable Contract"}
+                        </Button>
+                    </form>
                 </Pane>
             </Pane>
         )

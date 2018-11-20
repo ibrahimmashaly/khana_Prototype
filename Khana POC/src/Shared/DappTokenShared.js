@@ -3,6 +3,11 @@ import { Component } from 'react';
 
 class TokenShared extends Component {
 
+    static eventParams = {
+        fromBlock: 0, //contractDeployBlockNumber,
+        toBlock: 'latest'
+    }
+
     // Setup
 
     static defaultState = {
@@ -64,10 +69,9 @@ class TokenShared extends Component {
 
     // TODO: - Refactor into async/wait pattern when web3.js 1.0 is implemented
 
-    static setupContracts = async (state, web3, tokenContract, bondingCurveContract, contractDeployBlockNumber, callback) => {
+    static setupContracts = async (state, web3, tokenContract, bondingCurveContract, callback) => {
         tokenContract.setProvider(web3.currentProvider)
         bondingCurveContract.setProvider(web3.currentProvider)
-
 
         var contractInstance;
         var name;
@@ -104,35 +108,28 @@ class TokenShared extends Component {
                 return contractInstance.checkIfAdmin.call(accounts[0])
             }).then((isAdmin) => {
 
-                let awardEventsAll = contractInstance.LogAwarded({}, {
-                    fromBlock: 0, //contractDeployBlockNumber,
-                    toBlock: 'latest'
-                })
+                let allAuditedEvents = contractInstance.LogAuditHash({}, TokenShared.eventParams)
 
-                awardEventsAll.get((err, result) => {
+                allAuditedEvents.get((err, result) => {
                     if (err) {
-                        callback(null,"Error loading log events")
+                        callback(null, "Error loading log events")
                     }
 
-                    let logAwardHistory = result.map((log) => {
+                    // get latest audit file via IPFS hash
+                    let auditHistory = result.map((log) => {
                         return {
                             blockNumber: log.blockNumber,
-                            minter: log.args.minter,
-                            awardedTo: log.args.awardedTo,
-                            amount: (web3.fromWei(log.args.amount, 'ether')).toString(10),
-                            ipfsHash: log.args.ipfsHash,
-                            ethTxHash: log.transactionHash,
-                            reason: ''
+                            txHash: log.transactionHash,
+                            ipfsHash: log.args.ipfsHash
                         }
                     })
 
-                    awardEventsAll.stopWatching();
+                    allAuditedEvents.stopWatching()
+                    let ipfsEventLogged = auditHistory[auditHistory.length - 1]
 
-                    let ipfsEventLogged = result[result.length - 1]
-
-                    // Get latest IPFS hash if it exists
                     let updatedState = state
-
+                    updatedState.contract.latestIpfsHash = ipfsEventLogged.ipfsHash
+                    
                     updatedState.contract.instance = contractInstance
                     updatedState.contract.fundsInstance = fundsInstance
                     updatedState.contract.tokenName = name
@@ -144,10 +141,6 @@ class TokenShared extends Component {
                     updatedState.user.accounts = accounts
                     updatedState.user.isAdmin = isAdmin
 
-                    if (ipfsEventLogged != null) {
-                        updatedState.contract.latestIpfsHash = ipfsEventLogged.args.ipfsHash
-                        updatedState.contract.ipfsLogHistory.tokenActivity.awards = logAwardHistory
-                    }
                     callback(updatedState, null, true)
                 })
             }).catch((error) => {
@@ -157,6 +150,141 @@ class TokenShared extends Component {
     }
 
     // Updating
+
+    // Get latest events from blockchain emitted events
+    static updateAuditLogs = async (state, contractDeployBlockNumber, callback) => {
+        let logicContractInstance = state.contract.instance
+
+        // get audit details from blockchain
+        let logAwarded = []
+        let logBulkAwardSummary = []
+        let logBurned = []
+        let logAdminAdded = []
+        let logAdminRemoved = []
+        let logEmergencyStop = []
+
+
+        let eventParams = {
+            fromBlock: 0, //contractDeployBlockNumber,
+            toBlock: 'latest'
+        }
+
+
+        let allEvents = logicContractInstance.allEvents(eventParams)
+        allEvents.get((err, results) => {
+            if (err) {
+                callback(null, "Error loading log events")
+            }
+            
+            results.forEach((result) => {
+                const args = result.args
+                let auditTxHash = result.transactionHash
+                let auditBlockNumber = result.blockNumber
+
+                switch (result.event) {
+                    case "LogAwarded":
+                        logAwarded.unshift({
+                            awardedTo: args.awardedTo,
+                            minter: args.minter,
+                            amount: (state.web3.fromWei(args.amount, 'ether')).toString(10),
+                            ipfsHash: args.ipfsHash,
+                            txHash: auditTxHash,
+                            blockNumber: auditBlockNumber
+                        })
+                        break
+                    case "LogBulkAwardedSummary":
+                        logBulkAwardSummary.unshift({
+                            bulkCount: args.bulkCount.toString(10),
+                            minter: args.minter,
+                            ipfsHash: args.ipfsHash,
+                            txHash: auditTxHash,
+                            blockNumber: auditBlockNumber
+                        })
+                        break
+                    case "LogBurned":
+                        logBurned.unshift({
+                            burnFrom: args.burnFrom,
+                            amount: (state.web3.fromWei(args.amount, 'ether')).toString(10),
+                            ipfsHash: args.ipfsHash,
+                            txHash: auditTxHash,
+                            blockNumber: auditBlockNumber
+                        })
+                        break
+                    case "LogAdminAdded":
+                        logAdminAdded.unshift({
+                            account: args.account,
+                            ipfsHash: args.ipfsHash,
+                            txHash: auditTxHash,
+                            blockNumber: auditBlockNumber
+                        })
+                        break
+                    case "LogAdminRemoved":
+                        logAdminRemoved.unshift({
+                            account: args.account,
+                            ipfsHash: args.ipfsHash,
+                            txHash: auditTxHash,
+                            blockNumber: auditBlockNumber
+                        })
+                        break
+                    case "LogContractDisabled" || "LogContractEnabled":
+                        logEmergencyStop.unshift({
+                            ipfsHash: args.ipfsHash,
+                            txHash: auditTxHash,
+                            blockNumber: auditBlockNumber
+                        })
+                        break
+                    default:
+                        break
+                }
+            })
+
+            // TODO: - 
+            // LogFundsContractChanged
+            // LogBulkAwardedFailure
+
+            allEvents.stopWatching()
+
+            let updatedState = state
+
+            if (updatedState.contract.latestIpfsHash != null) {
+                updatedState.contract.ipfsLogHistory.tokenActivity.awards = logAwarded
+                updatedState.contract.ipfsLogHistory.tokenActivity.awardsBulk = logBulkAwardSummary
+                updatedState.contract.ipfsLogHistory.tokenActivity.burns = logBurned
+                updatedState.contract.ipfsLogHistory.tokenAdmin.addAdmin = logAdminAdded
+                updatedState.contract.ipfsLogHistory.tokenAdmin.removeAdmin = logAdminRemoved
+                updatedState.contract.ipfsLogHistory.tokenAdmin.emergencyStop = logEmergencyStop
+            }
+
+            callback(updatedState)
+        })
+    }
+
+    static updateLatestIpfsHash = async (state, callback) => {
+        let allAuditedEvents = state.contract.instance.LogAuditHash({}, TokenShared.eventParams)
+
+        allAuditedEvents.get((err, result) => {
+            if (err) {
+                callback(null, "Error loading log events")
+            }
+
+            // get latest audit file via IPFS hash
+            let auditHistory = result.map((log) => {
+                return {
+                    blockNumber: log.blockNumber,
+                    txHash: log.transactionHash,
+                    ipfsHash: log.args.ipfsHash
+                }
+            })
+
+            allAuditedEvents.stopWatching()
+            let ipfsEventLogged = auditHistory[auditHistory.length - 1]
+
+            let updatedState = state
+            updatedState.contract.latestIpfsHash = ipfsEventLogged.ipfsHash
+            console.log("latest ipfs: " + ipfsEventLogged.ipfsHash)
+            callback(updatedState)
+        })
+    }
 
     // Updates state and gets live data from contracts
     static updateState = async (state, callback, message) => {
@@ -174,7 +302,6 @@ class TokenShared extends Component {
             tokenBalance = (web3.fromWei(newBalance, 'ether')).toString(10);
             return khanaTokenInstance.contractEnabled()
         }).then((contractStatus) => {
-
             web3.eth.getBalance(fundsInstance.address, (err, result) => {
                 let newState = state
                 newState.contract.totalSupply = supply
@@ -186,9 +313,8 @@ class TokenShared extends Component {
                 newState.app.status = message ? message : ''
                 newState.app.isLoading = false
 
-                callback(newState)
+                TokenShared.updateLatestIpfsHash(newState, callback)
             })
-
         }).catch((error) => {
             callback(null, error)
         })

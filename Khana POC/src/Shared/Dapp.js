@@ -36,16 +36,16 @@ class Dapp extends Component {
         this.setState({web3: web3Instance})
 
         // Instantiate contract
-        TokenShared.setupContracts(this.state, web3Instance, this.tokenContract, this.bondingCurveContract, this.props.startingBlock, this.callbackSetState)        
+        TokenShared.setupContracts(this.state, web3Instance, this.tokenContract, this.bondingCurveContract, this.callbackSetState) 
     }
 
-    // Used by other components to update parent state including contracts
+    // Used by other components to refresh parent state including contracts
     updateState = async (message, description, alertLevel) => {
         TokenShared.updateState(this.state, this.callbackSetState, message)
         this.createNotification(message, description, alertLevel)
     }
 
-    // Update state (without live data from contracts)
+    // Update state directly from children
     updateStaticState = async (state) => {
         this.setState(state)
     }
