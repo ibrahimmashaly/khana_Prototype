@@ -32,21 +32,34 @@ contract KhanaToken is MintableToken {
 
     mapping (address => bool) public adminAccounts;
 
-    event LogContractDisabled(string ipfsHash);
-    event LogContractEnabled(string ipfsHash);
+    event LogContractDisabled(
+        address adminAddress,
+        string ipfsHash,
+        uint256 timeStamp
+    );
+    event LogContractEnabled(
+        address adminAddress,
+        string ipfsHash,
+        uint256 timeStamp
+    );
     event LogAdminAdded(
         address indexed account,
-        string ipfsHash
+        address adminAddress,
+        string ipfsHash,
+        uint256 timeStamp
     );
     event LogAdminRemoved(
         address indexed account,
-        string ipfsHash
+        address adminAddress,
+        string ipfsHash,
+        uint256 timeStamp
     );
     event LogAwarded(
         address indexed awardedTo,
         address indexed minter,
         uint256 amount,
-        string ipfsHash
+        string ipfsHash,
+        uint256 timeStamp
     );
     event LogBulkAwardedFailure(
         address failed,
@@ -55,7 +68,8 @@ contract KhanaToken is MintableToken {
     event LogBulkAwardedSummary(
         uint bulkCount,
         address indexed minter,
-        string ipfsHash
+        string ipfsHash,
+        uint256 timeStamp
     );
     event LogSell(
         address sellingAccount,
@@ -64,17 +78,22 @@ contract KhanaToken is MintableToken {
     );
     event LogFundsContractChanged(
         address oldContract,
-        address newContract
+        address newContract,
+        uint256 timeStamp
     );
     event LogBurned(
         address indexed burnFrom,
+        address adminAddress,
         uint256 amount,
-        string ipfsHash
+        string ipfsHash,
+        uint256 timeStamp
     );
 
     /**
      * @notice We want a single emitted event to record the most recent ipfs hash
-     * @notice Other events also contain the hash for redundancy event checking purposes 
+     * @notice Other events also contain the hash for redundancy event checking purposes
+     * @notice This could be useful if we want only the most recent IPFS hash instead of
+     * transversing all previous events 
      */
     event LogAuditHash(
         string ipfsHash
@@ -149,18 +168,21 @@ contract KhanaToken is MintableToken {
      * @param _amount The amount to be awarded.
      * @param _ipfsHash The IPFS hash of the latest audit log, which includes the
      * details and reason for the current award of tokens.
+     * @param _timeStamp Used as a unique ID (together with msg.sender) to display
+     * details of transactions when auditing
      */
     function award(
         address _account,
         uint256 _amount,
-        string _ipfsHash
+        string _ipfsHash,
+        uint256 _timeStamp
     )
         public
         onlyAdmins
         contractIsEnabled
     {
         mint(_account, _amount);
-        emit LogAwarded(_account, msg.sender, _amount, _ipfsHash);
+        emit LogAwarded(_account, msg.sender, _amount, _ipfsHash, _timeStamp);
         emit LogAuditHash(_ipfsHash);
     }
 
@@ -178,11 +200,14 @@ contract KhanaToken is MintableToken {
      * @param _amounts The amounts to be awarded to each address.
      * @param _ipfsHash The IPFS hash of the latest audit log, which includes the
      * details and reason for the current awards of tokens.
+     * @param _timeStamp Used as a unique ID (together with msg.sender) to display
+     * details of transactions when auditing
      */
     function awardBulk(
         address[] _accounts,
         uint256[] _amounts,
-        string _ipfsHash
+        string _ipfsHash,
+        uint256 _timeStamp
     )
         public
         onlyAdmins
@@ -198,23 +223,31 @@ contract KhanaToken is MintableToken {
         
         for (uint i = 0; i < _accounts.length; ++i) {
             uint256 amount = sameBulkAmount ? _amounts[0] : _amounts[i];
-            bool success = _awardQuiet(_accounts[i], amount, _ipfsHash);
+            bool success = _awardQuiet(_accounts[i], amount, _ipfsHash, _timeStamp);
             if (success) {
                 bulkCount++;
             } else {
                 emit LogBulkAwardedFailure(_accounts[i], amount);
             }
         }
-        emit LogBulkAwardedSummary(bulkCount, msg.sender, _ipfsHash);
+        emit LogBulkAwardedSummary(bulkCount, msg.sender, _ipfsHash, _timeStamp);
         // No need to emit LogAuditHash(_ipfsHash) as award() already emits the event via _awardQuiet()
         return bulkCount;
     }
 
-    function _awardQuiet(address _account, uint256 _amount, string _ipfsHash) internal returns (bool) {
+    function _awardQuiet(
+        address _account, 
+        uint256 _amount, 
+        string _ipfsHash, 
+        uint256 _timeStamp
+    )
+        internal 
+        returns (bool) 
+    {
         if (_account == address(0)) return false; // No awards for the black hole
         if (_account == address(this)) return false; // No awards for this token
         if (_amount <= 0) return false; // No awards for zero or less amounts
-        award(_account, _amount, _ipfsHash);
+        award(_account, _amount, _ipfsHash, _timeStamp);
         return true;
     }
 
@@ -286,11 +319,13 @@ contract KhanaToken is MintableToken {
      * in the bonding curve.
      * @notice Only the owner can change this value.
      * @param _contract The contract of the new funds contract
+     * @param _timeStamp Used as a unique ID (together with msg.sender) to display
+     * details of transactions when auditing
      */
-    function setFundsContract(address _contract) public onlyOwner {
+    function setFundsContract(address _contract, uint256 _timeStamp) public onlyOwner {
         address oldContract = fundsContract;
         fundsContract = _contract;
-        emit LogFundsContractChanged(oldContract, _contract);
+        emit LogFundsContractChanged(oldContract, _contract, _timeStamp);
     }
 
     // TODO: - moveFunds function when changing contracts
@@ -302,15 +337,25 @@ contract KhanaToken is MintableToken {
      * disables selling the token into the bonding curve contract.
      * Having a valid 'fundsContract' is optional to set the emergency stop.
      * @param _ipfsHash The IPFS hash of the latest audit log, including this action
+     * @param _timeStamp Used as a unique ID (together with msg.sender) to display
+     * details of transactions when auditing
      * @return A bool indicating if the emergency stop was successful.
      */
     // override onlyOwner in mintableToken
-    function emergencyStop(string _ipfsHash) public onlyAdmins contractIsEnabled returns (bool) {
+    function emergencyStop(
+        string _ipfsHash, 
+        uint256 _timeStamp
+    ) 
+        public 
+        onlyAdmins 
+        contractIsEnabled 
+        returns (bool) 
+    {
         contractEnabled = false;
         if (fundsContract != address(0)) {
             BondingCurveFunds(fundsContract).emergencyStop();
         }
-        emit LogContractDisabled(_ipfsHash);
+        emit LogContractDisabled(msg.sender, _ipfsHash, _timeStamp);
         emit LogAuditHash(_ipfsHash);
         return true;
     }
@@ -320,12 +365,22 @@ contract KhanaToken is MintableToken {
      * @notice A valid 'fundsContract' must be set before resuming. This can be
      * done via setFundsContract(address).
      * @param _ipfsHash The IPFS hash of the latest audit log, including this action
+     * @param _timeStamp Used as a unique ID (together with msg.sender) to display
+     * details of transactions when auditing
      * @return A bool indicating if the resuming of minting was successful.
      */
-    function resumeContract(string _ipfsHash) public onlyAdmins fundsContractIsValid returns (bool) {
+    function resumeContract(
+        string _ipfsHash, 
+        uint256 _timeStamp
+    ) 
+        public 
+        onlyAdmins 
+        fundsContractIsValid 
+        returns (bool) 
+    {
         contractEnabled = true;
         BondingCurveFunds(fundsContract).resumeContract();
-        emit LogContractEnabled(_ipfsHash);
+        emit LogContractEnabled(msg.sender,_ipfsHash, _timeStamp);
         emit LogAuditHash(_ipfsHash);
         return true;
     }
@@ -334,10 +389,12 @@ contract KhanaToken is MintableToken {
      * @dev Add an admin.
      * @param _account The address of the new admin.
      * @param _ipfsHash The IPFS hash of the latest audit log, including this action
+     * @param _timeStamp Used as a unique ID (together with msg.sender) to display
+     * details of transactions when auditing
      */
-    function addAdmin(address _account, string _ipfsHash) public onlyAdmins {
+    function addAdmin(address _account, string _ipfsHash, uint256 _timeStamp) public onlyAdmins {
         adminAccounts[_account] = true;
-        emit LogAdminAdded(_account, _ipfsHash);
+        emit LogAdminAdded(_account, msg.sender, _ipfsHash, _timeStamp);
         emit LogAuditHash(_ipfsHash);
     }
 
@@ -348,11 +405,13 @@ contract KhanaToken is MintableToken {
      * role needs to be transfered, then call 'transferOwnership()' in Ownable.sol.
      * @param _account The address of the admin to be removed.
      * @param _ipfsHash The IPFS hash of the latest audit log, including this action
+     * @param _timeStamp Used as a unique ID (together with msg.sender) to display
+     * details of transactions when auditing
      */
-    function removeAdmin(address _account, string _ipfsHash) public onlyAdmins {
+    function removeAdmin(address _account, string _ipfsHash, uint256 _timeStamp) public onlyAdmins {
         require(_account != owner, "Owner account cannot be removed as admin");
         adminAccounts[_account] = false;
-        emit LogAdminRemoved(_account, _ipfsHash);
+        emit LogAdminRemoved(_account, msg.sender, _ipfsHash, _timeStamp);
         emit LogAuditHash(_ipfsHash);
     }
 
@@ -374,14 +433,17 @@ contract KhanaToken is MintableToken {
      * @param _account The address of the account to burn tokens.
      * @param _amount The amount of tokens to burn.
      * @param _ipfsHash The IPFS hash of the latest audit log, including this action
+     * @param _timeStamp Used as a unique ID (together with msg.sender) to display
+     * details of transactions when auditing
      */
     function burn(
         address _account,
         uint256 _amount,
-        string _ipfsHash
+        string _ipfsHash, 
+        uint256 _timeStamp
     ) public onlyOwner {
         _burn(_account, _amount);
-        emit LogBurned(_account, _amount, _ipfsHash);
+        emit LogBurned(_account, msg.sender, _amount, _ipfsHash, _timeStamp);
         emit LogAuditHash(_ipfsHash);
     }
 

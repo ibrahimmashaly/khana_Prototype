@@ -60,17 +60,17 @@ class Audit extends Component {
                 "logicAddress": this.props.state.contract.logicAddress
             },
             "tokenAdmin": {
-                "addAdmin": [],
-                "removeAdmin": [],
-                "emergencyStop": [],
-                "moveFunds": [],
+                "addAdmin": {},
+                "removeAdmin": {},
+                "emergencyStop": {},
+                "moveFunds": {},
                 "auditChain": [],
                 "previousImportedAuditHashes": []
             },
             "tokenActivity": {
-                "burns": [],
-                "awardsBulk": [],
-                "awards": []
+                "burns": {},
+                "awardsBulk": {},
+                "awards": {}
             }
         }
 
@@ -132,18 +132,17 @@ class Audit extends Component {
      * @param reasons The reason for the award.
      * @return IPFS hash of new audit file.
     */
-    recordAward = async (toAddress, amount, reason) => {
+    recordAward = async (timeStamp, toAddress, amount, reason) => {
         let auditHistory = await this.getAuditJson()
 
         let newSingleAward = {
-            "timeStamp": Date.now(),
             "toAddress": toAddress,
             "adminAddress": this.props.state.user.currentAddress,
             "amount": amount,
             "reason": reason
         }
 
-        auditHistory.tokenActivity.awards.unshift(newSingleAward)
+        auditHistory.tokenActivity.awards[timeStamp + "-" + this.props.state.user.currentAddress] = newSingleAward
         return await this.createAndUploadNewAuditFile(auditHistory)
     }
 
@@ -156,11 +155,10 @@ class Audit extends Component {
      * @param reasons The reason for the bulk award.
      * @return IPFS hash of new audit file.
     */
-    recordBulkAward = async (accounts, amounts, reason) => {
+    recordBulkAward = async (timeStamp, accounts, amounts, reason) => {
         let auditHistory = await this.getAuditJson()
 
         let newBulkAward = {
-            "timeStamp": Date.now(),
             "toAddress": accounts,
             "adminAddress": this.props.state.user.currentAddress,
             "sameAmount": amounts.length === 1,
@@ -168,7 +166,7 @@ class Audit extends Component {
             "reason": reason
         }
 
-        auditHistory.tokenActivity.awardsBulk.unshift(newBulkAward)
+        auditHistory.tokenActivity.awardsBulk[timeStamp + "-" + this.props.state.user.currentAddress] = newBulkAward
         return await this.createAndUploadNewAuditFile(auditHistory)
     }
 
@@ -181,18 +179,17 @@ class Audit extends Component {
      * @param reasons The reason for the award.
      * @return IPFS hash of new audit file.
     */
-    recordBurn = async (toAddress, amount, reason) => {
+    recordBurn = async (timeStamp, toAddress, amount, reason) => {
         let auditHistory = await this.getAuditJson()
 
         let newBurn = {
-            "timeStamp": Date.now(),
             "toAddress": toAddress,
             "adminAddress": this.props.state.user.currentAddress,
             "amount": amount,
             "reason": reason
         }
 
-        auditHistory.tokenActivity.burns.unshift(newBurn)
+        auditHistory.tokenActivity.burns[timeStamp + "-" + this.props.state.user.currentAddress] = newBurn
         return await this.createAndUploadNewAuditFile(auditHistory)
     }
 
@@ -202,17 +199,16 @@ class Audit extends Component {
      * @param reasons The reason for the promotion.
      * @return IPFS hash of new audit file.
     */
-    recordAddAdmin = async (address, reason) => {
+    recordAddAdmin = async (timeStamp, address, reason) => {
         let auditHistory = await this.getAuditJson()
 
         let newAdmin = {
-            "timeStamp": Date.now(),
             "toAddress": address,
             "adminAddress": this.props.state.user.currentAddress,
             "reason": reason
         }
 
-        auditHistory.tokenAdmin.addAdmin.unshift(newAdmin)
+        auditHistory.tokenAdmin.addAdmin[timeStamp + "-" + this.props.state.user.currentAddress] = newAdmin
         return await this.createAndUploadNewAuditFile(auditHistory)
     }
 
@@ -222,17 +218,16 @@ class Audit extends Component {
      * @param reasons The reason for the removal.
      * @return IPFS hash of new audit file.
     */
-    recordRemoveAdmin = async (address, reason) => {
+    recordRemoveAdmin = async (timeStamp, address, reason) => {
         let auditHistory = await this.getAuditJson()
 
         let removeAdmin = {
-            "timeStamp": Date.now(),
             "toAddress": address,
             "adminAddress": this.props.state.user.currentAddress,
             "reason": reason
         }
 
-        auditHistory.tokenAdmin.removeAdmin.unshift(removeAdmin)
+        auditHistory.tokenAdmin.removeAdmin[timeStamp + "-" + this.props.state.user.currentAddress] = removeAdmin
         return await this.createAndUploadNewAuditFile(auditHistory)
     }
 
@@ -242,17 +237,16 @@ class Audit extends Component {
      * @param reasons The reason for the removal.
      * @return IPFS hash of new audit file.
     */
-    recordEmergencyStop = async (isActivating, reason) => {
+    recordEmergencyStop = async (timeStamp, isActivating, reason) => {
         let auditHistory = await this.getAuditJson()
 
         let emergencyStop = {
-            "timeStamp": Date.now(),
             "adminAddress": this.props.state.user.currentAddress,
             "isActivated": isActivating,
             "reason": reason
         }
 
-        auditHistory.tokenAdmin.emergencyStop.unshift(emergencyStop)
+        auditHistory.tokenAdmin.emergencyStop[timeStamp + "-" + this.props.state.user.currentAddress] = emergencyStop
         return await this.createAndUploadNewAuditFile(auditHistory)
     }
 

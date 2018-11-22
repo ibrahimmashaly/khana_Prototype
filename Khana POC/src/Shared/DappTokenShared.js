@@ -1,5 +1,6 @@
 import getWeb3 from '../utils/getWeb3'
 import { Component } from 'react';
+import { LogTypes } from '../utils/helpers';
 
 class TokenShared extends Component {
 
@@ -54,7 +55,7 @@ class TokenShared extends Component {
             isLoading: true,
             version: 0.1
         },
-        navigation: 2, // Used for knowing where we are in the navigation 'tabs'
+        navigation: 0, // Used for knowing where we are in the navigation 'tabs'
     }
 
     static setupDefaultState = async () => {
@@ -125,7 +126,9 @@ class TokenShared extends Component {
                     })
 
                     allAuditedEvents.stopWatching()
-                    let ipfsEventLogged = auditHistory[auditHistory.length - 1]
+
+                    // Use the most recent IPFS hash
+                    let ipfsEventLogged = auditHistory.length > 0 ? auditHistory[auditHistory.length - 1] : [{ ipfsHash: ""}]
 
                     let updatedState = state
                     updatedState.contract.latestIpfsHash = ipfsEventLogged.ipfsHash
@@ -154,6 +157,11 @@ class TokenShared extends Component {
     // Get latest events from blockchain emitted events
     static updateAuditLogs = async (state, contractDeployBlockNumber, callback) => {
         let logicContractInstance = state.contract.instance
+        
+        if (logicContractInstance == null) {
+            // callback(null, "Contract instance not yet loaded")
+            return
+        }
 
         // get audit details from blockchain
         let logAwarded = []
@@ -163,12 +171,10 @@ class TokenShared extends Component {
         let logAdminRemoved = []
         let logEmergencyStop = []
 
-
         let eventParams = {
             fromBlock: 0, //contractDeployBlockNumber,
             toBlock: 'latest'
         }
-
 
         let allEvents = logicContractInstance.allEvents(eventParams)
         allEvents.get((err, results) => {
@@ -185,52 +191,87 @@ class TokenShared extends Component {
                     case "LogAwarded":
                         logAwarded.unshift({
                             awardedTo: args.awardedTo,
-                            minter: args.minter,
+                            adminAddress: args.minter,
                             amount: (state.web3.fromWei(args.amount, 'ether')).toString(10),
                             ipfsHash: args.ipfsHash,
+                            timeStamp: args.timeStamp,
                             txHash: auditTxHash,
-                            blockNumber: auditBlockNumber
+                            blockNumber: auditBlockNumber,
+                            reason: '',
+                            type: LogTypes.award
                         })
                         break
                     case "LogBulkAwardedSummary":
                         logBulkAwardSummary.unshift({
                             bulkCount: args.bulkCount.toString(10),
-                            minter: args.minter,
+                            adminAddress: args.minter,
                             ipfsHash: args.ipfsHash,
+                            timeStamp: args.timeStamp,
                             txHash: auditTxHash,
-                            blockNumber: auditBlockNumber
+                            blockNumber: auditBlockNumber,
+                            reason: '',
+                            type: LogTypes.bulkAward
                         })
                         break
                     case "LogBurned":
                         logBurned.unshift({
                             burnFrom: args.burnFrom,
+                            adminAddress: args.adminAddress,
                             amount: (state.web3.fromWei(args.amount, 'ether')).toString(10),
                             ipfsHash: args.ipfsHash,
+                            timeStamp: args.timeStamp,
                             txHash: auditTxHash,
-                            blockNumber: auditBlockNumber
+                            blockNumber: auditBlockNumber,
+                            reason: '',
+                            type: LogTypes.burn
                         })
                         break
                     case "LogAdminAdded":
                         logAdminAdded.unshift({
                             account: args.account,
+                            adminAddress: args.adminAddress,
                             ipfsHash: args.ipfsHash,
+                            timeStamp: args.timeStamp,
                             txHash: auditTxHash,
-                            blockNumber: auditBlockNumber
+                            blockNumber: auditBlockNumber,
+                            reason: '',
+                            type: LogTypes.adminAdded
                         })
                         break
                     case "LogAdminRemoved":
                         logAdminRemoved.unshift({
                             account: args.account,
+                            adminAddress: args.adminAddress,
                             ipfsHash: args.ipfsHash,
+                            timeStamp: args.timeStamp,
                             txHash: auditTxHash,
-                            blockNumber: auditBlockNumber
+                            blockNumber: auditBlockNumber,
+                            reason: '',
+                            type: LogTypes.adminRemoved
                         })
                         break
-                    case "LogContractDisabled" || "LogContractEnabled":
+                    case "LogContractDisabled":
                         logEmergencyStop.unshift({
+                            activated: true,
                             ipfsHash: args.ipfsHash,
+                            timeStamp: args.timeStamp,
+                            adminAddress: args.adminAddress,
                             txHash: auditTxHash,
-                            blockNumber: auditBlockNumber
+                            blockNumber: auditBlockNumber,
+                            reason: '',
+                            type: LogTypes.emergencyStop
+                        })
+                        break
+                    case "LogContractEnabled":
+                        logEmergencyStop.unshift({
+                            activated: false,
+                            ipfsHash: args.ipfsHash,
+                            timeStamp: args.timeStamp,
+                            adminAddress: args.adminAddress,
+                            txHash: auditTxHash,
+                            blockNumber: auditBlockNumber,
+                            reason: '',
+                            type: LogTypes.emergencyStop
                         })
                         break
                     default:
@@ -244,9 +285,15 @@ class TokenShared extends Component {
 
             allEvents.stopWatching()
 
+            let newCombined = logAwarded.concat(logBurned, logAdminAdded, logAdminRemoved, logEmergencyStop)
+                .sort((a, b) => {
+                return a.blockNumber < b.blockNumber ? 1 : -1
+            })
+
             let updatedState = state
 
             if (updatedState.contract.latestIpfsHash != null) {
+                updatedState.contract.combinedList = newCombined
                 updatedState.contract.ipfsLogHistory.tokenActivity.awards = logAwarded
                 updatedState.contract.ipfsLogHistory.tokenActivity.awardsBulk = logBulkAwardSummary
                 updatedState.contract.ipfsLogHistory.tokenActivity.burns = logBurned
@@ -254,7 +301,6 @@ class TokenShared extends Component {
                 updatedState.contract.ipfsLogHistory.tokenAdmin.removeAdmin = logAdminRemoved
                 updatedState.contract.ipfsLogHistory.tokenAdmin.emergencyStop = logEmergencyStop
             }
-
             callback(updatedState)
         })
     }
@@ -277,11 +323,10 @@ class TokenShared extends Component {
             })
 
             allAuditedEvents.stopWatching()
-            let ipfsEventLogged = auditHistory[auditHistory.length - 1]
+            let ipfsEventLogged = auditHistory.length > 0 ? auditHistory[auditHistory.length - 1] : [{ ipfsHash: "" }]
 
             let updatedState = state
             updatedState.contract.latestIpfsHash = ipfsEventLogged.ipfsHash
-            console.log("latest ipfs: " + ipfsEventLogged.ipfsHash)
             callback(updatedState)
         })
     }

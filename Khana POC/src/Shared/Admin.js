@@ -24,19 +24,20 @@ class Admin extends Component {
             this.props.updateState('All details must be filled in to award tokens', '', 2)
             return
         }
-        
+
         // Record the award details on IPFS audit log
         let auditInstance = new Audit(this.props)
-        let ipfsHash = await auditInstance.recordAward(address, amount, reason)
+        let timeStamp = Date.now()
+        let ipfsHash = await auditInstance.recordAward(timeStamp, address, amount, reason)
         this.props.updateLoadingMessage('Entry added to IPFS audit file successfully', 'Please confirm the ethereum transaction via your wallet and wait for it to confirm.', 0)
-
-        console.log(ipfsHash)
 
         // Make contract changes and attach the IPFS hash permanently to an admin tx record (and to the events log)
         let khanaTokenInstance = this.props.state.contract.instance
         let accounts = this.props.state.user.accounts
 
-        khanaTokenInstance.award(address, amount, ipfsHash, { from: accounts[0], gas: 100000, gasPrice: web3.toWei(5, 'gwei') }).then((txResult) => {
+        Date.now()
+
+        khanaTokenInstance.award(address, amount, ipfsHash, timeStamp, { from: accounts[0], gas: 100000, gasPrice: web3.toWei(5, 'gwei') }).then((txResult) => {
 
             this.props.updateLoadingMessage('Waiting for transaction to confirm...', '', 0)
 
@@ -81,9 +82,6 @@ class Admin extends Component {
         let addresses = String(event.target.addresses.value).split(',').map(address => address.replace(/\s/g, ""))
         let amounts = String(event.target.amounts.value).split(',').map(amount => web3.toWei(amount, 'ether'))
         let reason = event.target.reason.value
-
-        console.log(addresses)
-        console.log(amounts)
         
         if (addresses.length === 0 || amounts.length === 0 || reason.length === 0) {
             this.props.updateState('All details must be filled in to award tokens', '', 2)
@@ -92,7 +90,8 @@ class Admin extends Component {
 
         // Record the award details on IPFS audit log
         let auditInstance = new Audit(this.props)
-        let ipfsHash = await auditInstance.recordBulkAward(addresses, amounts, reason)
+        let timeStamp = Date.now()
+        let ipfsHash = await auditInstance.recordBulkAward(timeStamp, addresses, amounts, reason)
         this.props.updateLoadingMessage('Entry added to IPFS audit file successfully', 'Please confirm the ethereum transaction via your wallet and wait for it to confirm.', 0)
 
         console.log(ipfsHash)
@@ -102,7 +101,7 @@ class Admin extends Component {
         let khanaTokenInstance = this.props.state.contract.instance
         let accounts = this.props.state.user.accounts
 
-        khanaTokenInstance.awardBulk(addresses, amounts, ipfsHash, { from: accounts[0], gas: 300000, gasPrice: web3.toWei(5, 'gwei') }).then((txResult) => {
+        khanaTokenInstance.awardBulk(addresses, amounts, ipfsHash, timeStamp, { from: accounts[0], gas: 300000, gasPrice: web3.toWei(5, 'gwei') }).then((txResult) => {
 
             this.props.updateLoadingMessage('Waiting for transaction to confirm...')
 
@@ -134,13 +133,14 @@ class Admin extends Component {
 
         // Record the award details on IPFS audit log
         let auditInstance = new Audit(this.props)
-        let ipfsHash = await auditInstance.recordAward(address, amount, reason)
+        let timeStamp = Date.now()
+        let ipfsHash = await auditInstance.recordAward(timeStamp, address, amount, reason)
         this.props.updateLoadingMessage('Burn added to IPFS audit file successfully', 'Please confirm the ethereum transaction via your wallet and wait for it to confirm.', 0)
 
         let khanaTokenInstance = this.props.state.contract.instance
         let accounts = this.props.state.user.accounts
 
-        khanaTokenInstance.burn(address, amount, ipfsHash, { from: accounts[0], gas: 100000, gasPrice: web3.toWei(5, 'gwei') }).then((txResult) => {
+        khanaTokenInstance.burn(address, amount, ipfsHash, timeStamp, { from: accounts[0], gas: 100000, gasPrice: web3.toWei(5, 'gwei') }).then((txResult) => {
 
             this.props.updateLoadingMessage('Waiting for transaction to confirm...')
 
@@ -180,13 +180,14 @@ class Admin extends Component {
 
         // Record the details on IPFS audit log
         let auditInstance = new Audit(this.props)
-        let ipfsHash = await auditInstance.recordAddAdmin(address, reason)
+        let timeStamp = Date.now()
+        let ipfsHash = await auditInstance.recordAddAdmin(timeStamp, address, reason)
         this.props.updateLoadingMessage('New admin recorded to IPFS audit file successfully', 'Please confirm the ethereum transaction via your wallet and wait for it to confirm.', 0)
 
         let khanaTokenInstance = this.props.state.contract.instance
         let accounts = this.props.state.user.accounts
 
-        khanaTokenInstance.addAdmin(address, ipfsHash, { from: accounts[0], gas: 100000, gasPrice: this.props.state.web3.toWei(5, 'gwei') }).then(() => {
+        khanaTokenInstance.addAdmin(address, ipfsHash, timeStamp, { from: accounts[0], gas: 100000, gasPrice: this.props.state.web3.toWei(5, 'gwei') }).then(() => {
             this.props.updateLoadingMessage('Waiting for transaction to confirm')
 
             let addedEvent = khanaTokenInstance.LogAdminAdded({ fromBlock: 'latest' }, (err, response) => {
@@ -207,13 +208,14 @@ class Admin extends Component {
 
         // Record the details on IPFS audit log
         let auditInstance = new Audit(this.props)
-        let ipfsHash = await auditInstance.recordRemoveAdmin(address, reason)
+        let timeStamp = Date.now()
+        let ipfsHash = await auditInstance.recordRemoveAdmin(timeStamp, address, reason)
         this.props.updateLoadingMessage('Remove admin recorded to IPFS audit file successfully', 'Please confirm the ethereum transaction via your wallet and wait for it to confirm.', 0)
 
         let khanaTokenInstance = this.props.state.contract.instance
         let accounts = this.props.state.user.accounts
 
-        khanaTokenInstance.removeAdmin(address, ipfsHash, { from: accounts[0], gas: 100000, gasPrice: this.props.state.web3.toWei(5, 'gwei') }).then(() => {
+        khanaTokenInstance.removeAdmin(address, ipfsHash, timeStamp, { from: accounts[0], gas: 100000, gasPrice: this.props.state.web3.toWei(5, 'gwei') }).then(() => {
             this.props.updateLoadingMessage('Waiting for transaction to confirm')
 
             let removedEvent = khanaTokenInstance.LogAdminRemoved({ fromBlock: 'latest' }, (err, response) => {
@@ -233,13 +235,14 @@ class Admin extends Component {
 
         // Record the details on IPFS audit log
         let auditInstance = new Audit(this.props)
-        let ipfsHash = await auditInstance.recordEmergencyStop(true, reason)
+        let timeStamp = Date.now()
+        let ipfsHash = await auditInstance.recordEmergencyStop(timeStamp, true, reason)
         this.props.updateLoadingMessage('Emergency stop recorded to IPFS audit file successfully', 'Please confirm the ethereum transaction via your wallet and wait for it to confirm.', 0)
 
         let khanaTokenInstance = this.props.state.contract.instance
         let accounts = this.props.state.user.accounts
 
-        khanaTokenInstance.emergencyStop(ipfsHash, { from: accounts[0], gas: 100000, gasPrice: this.props.state.web3.toWei(5, 'gwei') }).then((success) => {
+        khanaTokenInstance.emergencyStop(ipfsHash, timeStamp, { from: accounts[0], gas: 100000, gasPrice: this.props.state.web3.toWei(5, 'gwei') }).then((success) => {
             this.props.updateLoadingMessage('Waiting for transaction to confirm...')
 
             let disabledEvent = khanaTokenInstance.LogContractDisabled({ fromBlock: 'latest' }, (err, response) => {
@@ -259,13 +262,14 @@ class Admin extends Component {
 
         // Record the details on IPFS audit log
         let auditInstance = new Audit(this.props)
-        let ipfsHash = await auditInstance.recordEmergencyStop(false, reason)
+        let timeStamp = Date.now()
+        let ipfsHash = await auditInstance.recordEmergencyStop(timeStamp, false, reason)
         this.props.updateLoadingMessage('Re-enabling recorded to IPFS audit file successfully', 'Please confirm the ethereum transaction via your wallet and wait for it to confirm.', 0)
 
         let khanaTokenInstance = this.props.state.contract.instance
         let accounts = this.props.state.user.accounts
 
-        khanaTokenInstance.resumeContract(ipfsHash, { from: accounts[0], gas: 100000, gasPrice: this.props.state.web3.toWei(5, 'gwei') }).then((success) => {
+        khanaTokenInstance.resumeContract(ipfsHash, timeStamp, { from: accounts[0], gas: 100000, gasPrice: this.props.state.web3.toWei(5, 'gwei') }).then((success) => {
             this.props.updateLoadingMessage('Waiting for transaction to confirm...')
 
             let enabledEvent = khanaTokenInstance.LogContractEnabled({ fromBlock: 'latest' }, (err, response) => {

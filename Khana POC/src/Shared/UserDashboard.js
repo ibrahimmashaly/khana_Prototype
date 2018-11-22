@@ -1,6 +1,5 @@
 import React, { Component } from 'react'
 import {shortenAddress} from '../utils/helpers';
-import Audit from './Audit';
 
 import { Pane, Heading, Text, TextInputField, Button, Alert } from 'evergreen-ui';
 

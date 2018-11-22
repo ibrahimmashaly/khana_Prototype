@@ -15,7 +15,7 @@ module.exports = function(deployer, network, accounts) {
     .then((result) => {
         bondingFundsInstance = result
 
-        return khanaInstance.setFundsContract(BondingCurveFunds.address, {from: accounts[0]})
+        return khanaInstance.setFundsContract(BondingCurveFunds.address, Date.now(), {from: accounts[0]})
     })
     .then((result) => {
 
