@@ -26,23 +26,8 @@ class TokenShared extends Component {
             ethAmount: 0,
             contractEnabled: null,
             latestIpfsHash: null,
-            ipfsLogHistory: {
-                khanaInfo: { version: 0, lastUpgradeBlock: 0},
-                tokenInfo: {},
-                tokenAdmin: {
-                    addAdmin: [],
-                    removeAdmin: [],
-                    emergencyStop: [],
-                    moveFunds: [],
-                    auditChain: [],
-                    previousImportedAuditHashes: []
-                },
-                tokenActivity: {
-                    awards: [],
-                    awardsBulk: [],
-                    burns: []
-                }
-            }
+            combinedLogHistory: [],
+            khanaInfo: { version: 0, lastUpgradeBlock: 0}
         },
         user: {
             accounts: null,
@@ -293,13 +278,7 @@ class TokenShared extends Component {
             let updatedState = state
 
             if (updatedState.contract.latestIpfsHash != null) {
-                updatedState.contract.combinedList = newCombined
-                updatedState.contract.ipfsLogHistory.tokenActivity.awards = logAwarded
-                updatedState.contract.ipfsLogHistory.tokenActivity.awardsBulk = logBulkAwardSummary
-                updatedState.contract.ipfsLogHistory.tokenActivity.burns = logBurned
-                updatedState.contract.ipfsLogHistory.tokenAdmin.addAdmin = logAdminAdded
-                updatedState.contract.ipfsLogHistory.tokenAdmin.removeAdmin = logAdminRemoved
-                updatedState.contract.ipfsLogHistory.tokenAdmin.emergencyStop = logEmergencyStop
+                updatedState.contract.combinedLogHistory = newCombined
             }
             callback(updatedState)
         })

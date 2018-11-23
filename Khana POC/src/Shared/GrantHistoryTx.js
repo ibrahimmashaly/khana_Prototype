@@ -18,7 +18,7 @@ class GrantHistoryTx extends Component {
         
         let newCombinedList = []
 
-        for (const tx of this.props.state.contract.combinedList) {
+        for (const tx of this.props.state.contract.combinedLogHistory) {
             let id = tx.timeStamp + "-" + tx.adminAddress
             switch (tx.type) {
                 case LogTypes.award:
@@ -46,7 +46,7 @@ class GrantHistoryTx extends Component {
         }
         
         let newState = this.props.state
-        newState.contract.combinedList = newCombinedList
+        newState.contract.combinedLogHistory = newCombinedList
         this.props.updateStaticState(newState)
         this.props.updateState('Grant reasons loaded', '', 1)
     }
@@ -115,7 +115,7 @@ class GrantHistoryTx extends Component {
 
                     { copy(
                         this.createMenuItemToCopy('Copy admin address'), 
-                        tx.minter
+                        tx.adminAddress
                     )}
 
                     { copy(
@@ -271,7 +271,7 @@ class GrantHistoryTx extends Component {
     }
 
     renderRows = () => {
-        return this.props.state.contract.combinedList.map(tx => {
+        return this.props.state.contract.combinedLogHistory.map(tx => {
             switch (tx.type) {
                 case LogTypes.award:
                     return this.renderAward(tx)
@@ -292,8 +292,8 @@ class GrantHistoryTx extends Component {
     // TODO - set up for other Logged events such as burn etc
 
     render() {
-        let zeroCombinedList = this.props.state.contract.combinedList == null ?
-            true : this.props.state.contract.combinedList.length === 0
+        let zeroCombinedList = this.props.state.contract.combinedLogHistory == null ?
+            true : this.props.state.contract.combinedLogHistory.length === 0
         return (
             <Pane alignItems="center" display="flex" justifyContent="center">
                 {zeroCombinedList &&
