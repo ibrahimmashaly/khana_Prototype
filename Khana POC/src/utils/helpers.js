@@ -17,7 +17,8 @@ export const LogTypes = {
     burn: "burn",
     adminAdded: "adminAdded",
     adminRemoved: "adminRemoved",
-    emergencyStop: "emergencyStop"
+    emergencyStop: "emergencyStop",
+    emergencyResume: "emergencyResume"
 }
 
 

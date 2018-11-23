@@ -7,8 +7,9 @@ import { Pane, Button } from 'evergreen-ui'
 class GrantHistory extends Component {
 
     componentDidMount () {
-        if (this.props.state.contract.combinedLogHistory.length === 0) {
-            console.log("fired")
+        if (this.props.state.contract.combinedLogHistory.length === 0 ||
+            this.props.state.contract.reloadNeeded === true
+        ) {
             this.getAuditLogs()
         }
     }

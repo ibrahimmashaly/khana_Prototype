@@ -39,6 +39,9 @@ class GrantHistoryTx extends Component {
                 case LogTypes.emergencyStop:
                     tx.reason = auditJson.tokenAdmin.emergencyStop[id].reason
                     break
+                case LogTypes.emergencyResume:
+                    tx.reason = auditJson.tokenAdmin.emergencyStop[id].reason
+                    break
                 default:
                     break
             }
@@ -99,7 +102,7 @@ class GrantHistoryTx extends Component {
                             window.open(url, "_blank")
                         }}
                     >
-                        See transaction details
+                        See transaction details in block {tx.blockNumber}
                     </Menu.Item>
 
                     <Menu.Item
@@ -148,11 +151,10 @@ class GrantHistoryTx extends Component {
                     // alert('selected')
                 }}
                 height='auto'>
-                <Table.TextCell flexBasis={88} flexShrink={1} flexGrow={0}>Award</Table.TextCell>
+                <Table.TextCell flexBasis={80} flexShrink={1} flexGrow={0}>Award</Table.TextCell>
                 <Table.TextCell flexBasis={88} flexShrink={1} flexGrow={0}>{shortenAddress(tx.adminAddress, false)}</Table.TextCell>
                 <Table.TextCell flexBasis={80} flexShrink={1} flexGrow={0}>{tx.amount} {this.props.state.contract.tokenSymbol}</Table.TextCell>
                 <Table.TextCell flexBasis={88} flexShrink={1} flexGrow={0}>{shortenAddress(tx.awardedTo, false)}</Table.TextCell>
-                <Table.TextCell flexBasis={88} flexShrink={1} flexGrow={0} isNumber={true}>{tx.blockNumber}</Table.TextCell>
                 {this.renderReason(tx)}
                 <Table.Cell width={48} flex="none">
                     <Popover
@@ -174,11 +176,10 @@ class GrantHistoryTx extends Component {
                     // alert('selected')
                 }}
                 height='auto'>
-                <Table.TextCell flexBasis={88} flexShrink={1} flexGrow={0}>Burn</Table.TextCell>
+                <Table.TextCell flexBasis={80} flexShrink={1} flexGrow={0}>Burn</Table.TextCell>
                 <Table.TextCell flexBasis={88} flexShrink={1} flexGrow={0}>{shortenAddress(tx.adminAddress, false)}</Table.TextCell>
                 <Table.TextCell flexBasis={80} flexShrink={1} flexGrow={0}>-{tx.amount} {this.props.state.contract.tokenSymbol}</Table.TextCell>
                 <Table.TextCell flexBasis={88} flexShrink={1} flexGrow={0}>{shortenAddress(tx.burnFrom, false)}</Table.TextCell>
-                <Table.TextCell flexBasis={88} flexShrink={1} flexGrow={0} isNumber={true}>{tx.blockNumber}</Table.TextCell>
                 {this.renderReason(tx)}
                 <Table.Cell width={48} flex="none">
                     <Popover
@@ -200,11 +201,10 @@ class GrantHistoryTx extends Component {
                     // alert('selected')
                 }}
                 height='auto'>
-                <Table.TextCell flexBasis={88} flexShrink={1} flexGrow={0}>New Admin</Table.TextCell>
+                <Table.TextCell flexBasis={80} flexShrink={1} flexGrow={0}>Admin +</Table.TextCell>
                 <Table.TextCell flexBasis={88} flexShrink={1} flexGrow={0}>{shortenAddress(tx.adminAddress, false)}</Table.TextCell>
                 <Table.TextCell flexBasis={80} flexShrink={1} flexGrow={0}>n/a</Table.TextCell>
                 <Table.TextCell flexBasis={88} flexShrink={1} flexGrow={0}>{shortenAddress(tx.account, false)}</Table.TextCell>
-                <Table.TextCell flexBasis={88} flexShrink={1} flexGrow={0} isNumber={true}>{tx.blockNumber}</Table.TextCell>
                 {this.renderReason(tx)}
                 <Table.Cell width={48} flex="none">
                     <Popover
@@ -226,11 +226,10 @@ class GrantHistoryTx extends Component {
                     // alert('selected')
                 }}
                 height='auto'>
-                <Table.TextCell flexBasis={88} flexShrink={1} flexGrow={0}>Remove Admin</Table.TextCell>
+                <Table.TextCell flexBasis={80} flexShrink={1} flexGrow={0}>Admin -</Table.TextCell>
                 <Table.TextCell flexBasis={88} flexShrink={1} flexGrow={0}>{shortenAddress(tx.adminAddress, false)}</Table.TextCell>
                 <Table.TextCell flexBasis={80} flexShrink={1} flexGrow={0}>n/a</Table.TextCell>
                 <Table.TextCell flexBasis={88} flexShrink={1} flexGrow={0}>{shortenAddress(tx.account, false)}</Table.TextCell>
-                <Table.TextCell flexBasis={88} flexShrink={1} flexGrow={0} isNumber={true}>{tx.blockNumber}</Table.TextCell>
                 {this.renderReason(tx)}
                 <Table.Cell width={48} flex="none">
                     <Popover
@@ -252,11 +251,10 @@ class GrantHistoryTx extends Component {
                     // alert('selected')
                 }}
                 height='auto'>
-                <Table.TextCell flexBasis={88} flexShrink={1} flexGrow={0}>{tx.activated ? "Emergency Stop" : "Re-activation"}</Table.TextCell>
+                <Table.TextCell flexBasis={80} flexShrink={1} flexGrow={0}>{tx.activated ? "E.S" : "E.R"}</Table.TextCell>
                 <Table.TextCell flexBasis={88} flexShrink={1} flexGrow={0}>{shortenAddress(tx.adminAddress, false)}</Table.TextCell>
                 <Table.TextCell flexBasis={80} flexShrink={1} flexGrow={0}>n/a</Table.TextCell>
                 <Table.TextCell flexBasis={88} flexShrink={1} flexGrow={0}>n/a</Table.TextCell>
-                <Table.TextCell flexBasis={88} flexShrink={1} flexGrow={0} isNumber={true}>{tx.blockNumber}</Table.TextCell>
                 {this.renderReason(tx)}
                 <Table.Cell width={48} flex="none">
                     <Popover
@@ -283,6 +281,8 @@ class GrantHistoryTx extends Component {
                     return this.renderAdminRemoved(tx)
                 case LogTypes.emergencyStop:
                     return this.renderEmergencyStop(tx)
+                case LogTypes.emergencyResume:
+                    return this.renderEmergencyStop(tx)
                 default:
                     return null
             }
@@ -298,7 +298,7 @@ class GrantHistoryTx extends Component {
             <Pane alignItems="center" display="flex" justifyContent="center">
                 {zeroCombinedList &&
                     <Pane margin={16}>
-                        <Heading size={400}>No transaction history</Heading>
+                        <Heading size={400}>No transaction history yet</Heading>
                     </Pane>
                 }
                 
@@ -306,11 +306,10 @@ class GrantHistoryTx extends Component {
                     <Pane width={isMobileOnly ? 344 : 800}>
                         <Table borderRadius={5} border="default" marginBottom={16}>
                             <Table.Head background="greenTint">
-                                <Table.TextHeaderCell flexBasis={88} flexShrink={1} flexGrow={0}>Type</Table.TextHeaderCell>
+                                <Table.TextHeaderCell flexBasis={80} flexShrink={1} flexGrow={0}>Type</Table.TextHeaderCell>
                                 <Table.TextHeaderCell flexBasis={88} flexShrink={1} flexGrow={0}>Admin</Table.TextHeaderCell>
                                 <Table.TextHeaderCell flexBasis={80} flexShrink={1} flexGrow={0}>Amount</Table.TextHeaderCell>
                                 <Table.TextHeaderCell flexBasis={88} flexShrink={1} flexGrow={0}>Receiver</Table.TextHeaderCell>
-                                <Table.TextHeaderCell flexBasis={88} flexShrink={1} flexGrow={0}>Block#</Table.TextHeaderCell>
                                 {!isMobileOnly &&
                                     <Table.TextHeaderCell width={300}>Grant Reason</Table.TextHeaderCell>
                                 }

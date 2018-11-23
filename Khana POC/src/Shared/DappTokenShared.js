@@ -27,6 +27,7 @@ class TokenShared extends Component {
             contractEnabled: null,
             latestIpfsHash: null,
             combinedLogHistory: [],
+            reloadNeeded: false,
             khanaInfo: { version: 0, lastUpgradeBlock: 0}
         },
         user: {
@@ -256,7 +257,7 @@ class TokenShared extends Component {
                             txHash: auditTxHash,
                             blockNumber: auditBlockNumber,
                             reason: '',
-                            type: LogTypes.emergencyStop
+                            type: LogTypes.emergencyResume
                         })
                         break
                     default:
@@ -276,6 +277,7 @@ class TokenShared extends Component {
             })
 
             let updatedState = state
+            updatedState.contract.reloadNeeded = false
 
             if (updatedState.contract.latestIpfsHash != null) {
                 updatedState.contract.combinedLogHistory = newCombined

@@ -1,12 +1,71 @@
 import React, { Component } from 'react'
 import Audit from './Audit'
+import { LogTypes } from '../utils/helpers';
+
 
 import { Pane, Text, TextInputField, Heading, Button } from 'evergreen-ui'
 
 class Admin extends Component {
 
-    updateState = async (newState) => {
+    // Used to finalise each transaction that should be properly recorded on the audit logs
+    finaliseTx = async (response, ipfsHash, type, message) => {
+        let web3 = this.props.state.web3
+        let args = response.args
 
+        let txDict = {
+            ipfsHash: args.ipfsHash,
+            txHash: response.transactionHash,
+            reason: '',
+            blockNumber: response.blockNumber,
+            timeStamp: response.args.timeStamp,
+            type: type
+        }
+
+        switch (type) {
+            case LogTypes.award:
+                txDict["adminAddress"] = args.minter
+                txDict["awardedTo"] = args.awardedTo
+                txDict["amount"] = (web3.fromWei(args.amount, 'ether')).toString(10)
+                break
+            case LogTypes.bulkAward:
+                txDict["bulkCount"] = args.bulkCount.toString(10)
+                txDict["adminAddress"] = args.minter
+
+                // Force a reload in Grant History to show new bulk awards
+                this.props.state.contract.reloadNeeded = true
+                break
+            case LogTypes.burn:
+                txDict["burnFrom"] = args.burnFrom
+                txDict["adminAddress"] = args.adminAddress
+                txDict["amount"] = (web3.fromWei(args.amount, 'ether')).toString(10)
+                break
+            case LogTypes.adminAdded:
+                txDict["account"] = args.account
+                txDict["adminAddress"] = args.adminAddress
+                break
+            case LogTypes.adminRemoved:
+                txDict["account"] = args.account
+                txDict["adminAddress"] = args.adminAddress
+                break
+            case LogTypes.emergencyStop:
+                txDict["activated"] = true
+                txDict["adminAddress"] = args.adminAddress
+                break
+            case LogTypes.emergencyResume:
+                txDict["activated"] = false
+                txDict["adminAddress"] = args.adminAddress
+                break
+            default:
+                break
+        }
+
+        // Update latest ipfsHash and combinedLogHistory
+        let contractState = this.props.state.contract
+        contractState.latestIpfsHash = ipfsHash
+
+        contractState.combinedLogHistory.unshift(txDict)
+        this.setState({ contract: contractState })
+        this.props.updateState('Success!', message, 1);
     }
 
     awardTokens = async (event) => {
@@ -35,8 +94,6 @@ class Admin extends Component {
         let khanaTokenInstance = this.props.state.contract.instance
         let accounts = this.props.state.user.accounts
 
-        Date.now()
-
         khanaTokenInstance.award(address, amount, ipfsHash, timeStamp, { from: accounts[0], gas: 100000, gasPrice: web3.toWei(5, 'gwei') }).then((txResult) => {
 
             this.props.updateLoadingMessage('Waiting for transaction to confirm...', '', 0)
@@ -46,25 +103,10 @@ class Admin extends Component {
                 // Ensure we're not detecting old events in previous (i.e. the current) block. 
                 // This bug is more relevant to dev environment where all recent blocks could be emitting this event, causing bugs.
                 if (response.blockNumber >= txResult.receipt.blockNumber) {
-
-                    // Update latest ipfsHash and history
-                    let contractState = this.props.state.contract
-                    contractState.latestIpfsHash = ipfsHash
-                    contractState.ipfsLogHistory.tokenActivity.awards.push({
-                        blockNumber: response.blockNumber,
-                        minter: response.args.minter,
-                        awardedTo: response.args.awardedTo,
-                        amount: (web3.fromWei(response.args.amount, 'ether')).toString(10),
-                        ipfsHash: response.args.ipfsHash,
-                        ethTxHash: response.transactionHash,
-                        reason: ''
-                    })
-
-                    this.setState({ contract: contractState })
-                    this.props.updateState('Success!', 'Transaction confirmed and tokens granted. See Grant History for more details.', 1);
-
+                    let message = "Transaction confirmed and tokens granted. See Grant History for more details."
+                    this.finaliseTx(response, ipfsHash, LogTypes.award, message)
                     awardedEvent.stopWatching()
-                    document.getElementById("awardButton").disabled = false;
+                    document.getElementById("awardButton").disabled = false
                 }
             })
         }).catch((error) => {
@@ -94,9 +136,6 @@ class Admin extends Component {
         let ipfsHash = await auditInstance.recordBulkAward(timeStamp, addresses, amounts, reason)
         this.props.updateLoadingMessage('Entry added to IPFS audit file successfully', 'Please confirm the ethereum transaction via your wallet and wait for it to confirm.', 0)
 
-        console.log(ipfsHash)
-
-
         // Make contract changes and attach the IPFS hash permanently to an admin tx record (and to the events log)
         let khanaTokenInstance = this.props.state.contract.instance
         let accounts = this.props.state.user.accounts
@@ -109,9 +148,10 @@ class Admin extends Component {
 
                 // Ensure we're not detecting old events in previous (i.e. the current) block. This bug is more relevant to dev environment where all recent blocks could be emitting this event, causing bugs.
                 if (response.blockNumber >= txResult.receipt.blockNumber) {
-                    this.props.updateState('Success!', 'Transaction confirmed and tokens bulk awarded.', 1);
+                    let message = "Transaction confirmed and tokens bulk awarded."
+                    this.finaliseTx(response, ipfsHash, LogTypes.bulkAward, message)
                     bulkAwardEvent.stopWatching()
-                    document.getElementById("bulkAwardButton").disabled = false;
+                    document.getElementById("bulkAwardButton").disabled = false
                 }
             })
         }).catch((error) => {
@@ -148,9 +188,10 @@ class Admin extends Component {
 
                 // Ensure we're not detecting old events in previous (i.e. the current) block. This bug is more relevant to dev environment where all recent blocks could be emitting this event, causing bugs.
                 if (response.blockNumber >= txResult.receipt.blockNumber) {
-                    this.props.updateState('Success!', 'Transaction confirmed and tokens burned.', 1);
+                    let message = "Transaction confirmed and tokens burned."
+                    this.finaliseTx(response, ipfsHash, LogTypes.burn, message)
                     burnEvent.stopWatching()
-                    document.getElementById("burnTokens").disabled = false;
+                    document.getElementById("burnTokens").disabled = false
                 }
             })
         }).catch((error) => {
@@ -191,8 +232,9 @@ class Admin extends Component {
             this.props.updateLoadingMessage('Waiting for transaction to confirm')
 
             let addedEvent = khanaTokenInstance.LogAdminAdded({ fromBlock: 'latest' }, (err, response) => {
-                this.props.updateState('Success!', 'User added as an admin', 1);
-                addedEvent.stopWatching();
+                let message = "User added as an admin"
+                this.finaliseTx(response, ipfsHash, LogTypes.addAdmin, message)
+                addedEvent.stopWatching()
             })
         }).catch((error) => {
             this.props.updateState('Admin error', error.message, 3)
@@ -219,8 +261,9 @@ class Admin extends Component {
             this.props.updateLoadingMessage('Waiting for transaction to confirm')
 
             let removedEvent = khanaTokenInstance.LogAdminRemoved({ fromBlock: 'latest' }, (err, response) => {
-                this.props.updateState('Success', 'User removed as an admin', 1);
-                removedEvent.stopWatching();
+                let message = "User removed as an admin"
+                this.finaliseTx(response, ipfsHash, LogTypes.removeAdmin, message)
+                removedEvent.stopWatching()
             })
         }).catch((error) => {
             this.props.updateState('Admin error', error.message, 3)
@@ -246,8 +289,9 @@ class Admin extends Component {
             this.props.updateLoadingMessage('Waiting for transaction to confirm...')
 
             let disabledEvent = khanaTokenInstance.LogContractDisabled({ fromBlock: 'latest' }, (err, response) => {
-                this.props.updateState('Success!', 'Emergency stop activated', 1);
-                disabledEvent.stopWatching();
+                let message = "Emergency stop activated"
+                this.finaliseTx(response, ipfsHash, LogTypes.emergencyStop, message)
+                disabledEvent.stopWatching()
             })
         }).catch((error) => {
             this.props.updateState('Admin error', error.message, 3)
@@ -273,8 +317,9 @@ class Admin extends Component {
             this.props.updateLoadingMessage('Waiting for transaction to confirm...')
 
             let enabledEvent = khanaTokenInstance.LogContractEnabled({ fromBlock: 'latest' }, (err, response) => {
-                this.props.updateState('Success!', 'Contract re-enabled', 1);
-                enabledEvent.stopWatching();
+                let message = "Contract re-enabled"
+                this.finaliseTx(response, ipfsHash, LogTypes.emergencyResume, message)
+                enabledEvent.stopWatching()
             })
         }).catch((error) => {
             this.props.updateState('Admin error', error.message, 3)

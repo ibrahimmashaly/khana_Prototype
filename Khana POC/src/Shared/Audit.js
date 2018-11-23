@@ -85,7 +85,6 @@ class Audit extends Component {
     createAndUploadNewAuditFile = async (auditDict) => {
 
         let currentIpfsHash = this.props.state.contract.latestIpfsHash
-        console.log(currentIpfsHash)
         if (currentIpfsHash != null) {
             auditDict.tokenAdmin.auditChain.unshift(currentIpfsHash)
         }
