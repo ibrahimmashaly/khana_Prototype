@@ -108,9 +108,8 @@ class UserDashboard extends Component {
                                     Amount in bonding curve: {((this.props.state.contract.ethAmount) * 1).toFixed(4)} ETH
                                 </Text>
                                 <p></p>
-                                <Text>Sell your tokens to the bonding curve below</Text>
-                                
-                                <form onSubmit={this.sellTokens} id="sell-tokens">
+                                <Text>Sell your tokens to the bonding curve below</Text>                                
+                                    <form onSubmit={this.sellTokens} id="sell-tokens">
                                     <Pane flex={1} alignItems="baseline" display="flex">
                                         <TextInputField
                                             label=""

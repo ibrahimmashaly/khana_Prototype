@@ -15,7 +15,7 @@ module.exports = function(deployer, network, accounts) {
     .then((result) => {
         bcdBondingFundsInstance = result
 
-        return bcdInstance.setFundsContract(BlockDamBondingCurveFunds.address, {from: accounts[0]})
+        return bcdInstance.setFundsContract(BlockDamBondingCurveFunds.address, Date.now(), {from: accounts[0]})
     })
     .then((result) => {
 

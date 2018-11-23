@@ -7,6 +7,20 @@ export let endPoints = {
     ipfsEndpoint: "https://gateway.ipfs.io/ipfs/"
 }
 
+// 
+// Enums
+//
+
+export const LogTypes = {
+    award: "award",
+    bulkAward: "bulkAward",
+    burn: "burn",
+    adminAdded: "adminAdded",
+    adminRemoved: "adminRemoved",
+    emergencyStop: "emergencyStop",
+    emergencyResume: "emergencyResume"
+}
+
 
 //
 // Clipboard operations
