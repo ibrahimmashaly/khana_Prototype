@@ -11,7 +11,7 @@ import "./BondingCurveFunds.sol";
  * award them) to community members, record the IPFS hash of the reasons associated
  * with each minting, and a simple bonding curve where token holders can redeem
  * ETH for tokens they've received.
- * For more information, see: https://goo.gl/z7VdXg
+ * For more information, see: https://khana.io
  */
 
 contract KhanaToken is MintableToken {

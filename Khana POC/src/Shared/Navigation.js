@@ -45,7 +45,7 @@ class Navigation extends Component {
                     </Pane>
                     }
                     <Pane>
-                        <Heading size={100}>Khana Framework: 📈 <strong>{this.props.state.contract.tokenName} ({this.props.state.contract.tokenSymbol})</strong></Heading>
+                        <Heading size={100}>Khana v.0.2: 📈 <strong>{this.props.state.contract.tokenName} ({this.props.state.contract.tokenSymbol})</strong></Heading>
                     </Pane>
                 </Pane>
                 <Tablist marginBottom={8} flexBasis={240} marginRight={24}>
