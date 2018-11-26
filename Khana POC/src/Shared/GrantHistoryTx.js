@@ -71,6 +71,9 @@ class GrantHistoryTx extends Component {
                     marginLeft={16}
                 >
                     <Pane padding={4}>
+                        <Text>Grant Type: {this.getTxTypeText(tx.type)}</Text>
+                    </Pane>
+                    <Pane padding={4}>
                     {tx.reason !== '' ? (
                         <Text size={400}>
                             <Linkify properties={{target: '_blank'}}>
@@ -151,7 +154,7 @@ class GrantHistoryTx extends Component {
                     // alert('selected')
                 }}
                 height='auto'>
-                <Table.TextCell flexBasis={80} flexShrink={1} flexGrow={0}>Award</Table.TextCell>
+                <Table.TextCell flexBasis={80} flexShrink={1} flexGrow={0}>{this.getTxTypeText(tx.type)}</Table.TextCell>
                 <Table.TextCell flexBasis={88} flexShrink={1} flexGrow={0}>{shortenAddress(tx.adminAddress, false)}</Table.TextCell>
                 <Table.TextCell flexBasis={80} flexShrink={1} flexGrow={0}>{tx.amount} {this.props.state.contract.tokenSymbol}</Table.TextCell>
                 <Table.TextCell flexBasis={88} flexShrink={1} flexGrow={0}>{shortenAddress(tx.awardedTo, false)}</Table.TextCell>
@@ -176,7 +179,7 @@ class GrantHistoryTx extends Component {
                     // alert('selected')
                 }}
                 height='auto'>
-                <Table.TextCell flexBasis={80} flexShrink={1} flexGrow={0}>Burn</Table.TextCell>
+                <Table.TextCell flexBasis={80} flexShrink={1} flexGrow={0}>{this.getTxTypeText(tx.type)}</Table.TextCell>
                 <Table.TextCell flexBasis={88} flexShrink={1} flexGrow={0}>{shortenAddress(tx.adminAddress, false)}</Table.TextCell>
                 <Table.TextCell flexBasis={80} flexShrink={1} flexGrow={0}>-{tx.amount} {this.props.state.contract.tokenSymbol}</Table.TextCell>
                 <Table.TextCell flexBasis={88} flexShrink={1} flexGrow={0}>{shortenAddress(tx.burnFrom, false)}</Table.TextCell>
@@ -201,7 +204,7 @@ class GrantHistoryTx extends Component {
                     // alert('selected')
                 }}
                 height='auto'>
-                <Table.TextCell flexBasis={80} flexShrink={1} flexGrow={0}>Admin +</Table.TextCell>
+                <Table.TextCell flexBasis={80} flexShrink={1} flexGrow={0}>{this.getTxTypeText(tx.type)}</Table.TextCell>
                 <Table.TextCell flexBasis={88} flexShrink={1} flexGrow={0}>{shortenAddress(tx.adminAddress, false)}</Table.TextCell>
                 <Table.TextCell flexBasis={80} flexShrink={1} flexGrow={0}>n/a</Table.TextCell>
                 <Table.TextCell flexBasis={88} flexShrink={1} flexGrow={0}>{shortenAddress(tx.account, false)}</Table.TextCell>
@@ -226,7 +229,7 @@ class GrantHistoryTx extends Component {
                     // alert('selected')
                 }}
                 height='auto'>
-                <Table.TextCell flexBasis={80} flexShrink={1} flexGrow={0}>Admin -</Table.TextCell>
+                <Table.TextCell flexBasis={80} flexShrink={1} flexGrow={0}>{this.getTxTypeText(tx.type)}</Table.TextCell>
                 <Table.TextCell flexBasis={88} flexShrink={1} flexGrow={0}>{shortenAddress(tx.adminAddress, false)}</Table.TextCell>
                 <Table.TextCell flexBasis={80} flexShrink={1} flexGrow={0}>n/a</Table.TextCell>
                 <Table.TextCell flexBasis={88} flexShrink={1} flexGrow={0}>{shortenAddress(tx.account, false)}</Table.TextCell>
@@ -251,7 +254,7 @@ class GrantHistoryTx extends Component {
                     // alert('selected')
                 }}
                 height='auto'>
-                <Table.TextCell flexBasis={80} flexShrink={1} flexGrow={0}>{tx.activated ? "E.S" : "E.R"}</Table.TextCell>
+                <Table.TextCell flexBasis={80} flexShrink={1} flexGrow={0}>{this.getTxTypeText(tx.type)}</Table.TextCell>
                 <Table.TextCell flexBasis={88} flexShrink={1} flexGrow={0}>{shortenAddress(tx.adminAddress, false)}</Table.TextCell>
                 <Table.TextCell flexBasis={80} flexShrink={1} flexGrow={0}>n/a</Table.TextCell>
                 <Table.TextCell flexBasis={88} flexShrink={1} flexGrow={0}>n/a</Table.TextCell>
@@ -287,6 +290,25 @@ class GrantHistoryTx extends Component {
                     return null
             }
         })
+    }
+
+    getTxTypeText = (type) => {
+        switch (type) {
+            case LogTypes.award:
+                return "Award"
+            case LogTypes.burn:
+                return "Burn"
+            case LogTypes.adminAdded:
+                return "Admin +"
+            case LogTypes.adminRemoved:
+                return "Admin -"
+            case LogTypes.emergencyStop:
+                return "E. Stop"
+            case LogTypes.emergencyResume:
+                return "E. Resume"
+            default:
+                return null
+        }
     }
 
     // TODO - set up for other Logged events such as burn etc

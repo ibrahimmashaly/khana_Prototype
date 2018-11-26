@@ -349,6 +349,7 @@ class Admin extends Component {
                                 htmlFor="awardTokens"
                                 type="text"
                                 name="address"
+                                required
                             />
                             <TextInputField
                                 label={"Amount of " + this.props.state.contract.tokenSymbol}
@@ -356,6 +357,7 @@ class Admin extends Component {
                                 htmlFor="awardTokens"
                                 type="number"
                                 name="amount"
+                                required
                             />
                             <TextInputField
                                 label="Reason for granting"
@@ -363,6 +365,7 @@ class Admin extends Component {
                                 htmlFor="awardTokens"
                                 type="text"
                                 name="reason"
+                                required
                             />
                             <Button type="submit" id="awardButton" marginLeft={8}>Grant</Button>
                         </form>
@@ -374,16 +377,17 @@ class Admin extends Component {
                 <Pane padding={14} marginBottom={16} background="greenTint" borderRadius={5} border="default">
                     <Pane marginBottom={16}>
                         <Heading size={400}>Bulk grant tokens to community members</Heading>
-                        <Text>The 'member addresses' should be comma separated</Text>
                     </Pane>
                     <Pane>
                         <form onSubmit={this.bulkAwardTokens} id="bulkAwardTokens">
                             <TextInputField
                                 label="Member addresses"
-                                placeholder="0x...."
+                                description="Each address must be comma separated"
+                                placeholder="0xAddress1, 0xAddress2, 0xAddress3..."
                                 htmlFor="bulkAwardTokens"
                                 type="text"
                                 name="addresses"
+                                required
                             />
                             <TextInputField
                                 label={"Amount of " + this.props.state.contract.tokenSymbol}
@@ -391,6 +395,7 @@ class Admin extends Component {
                                 htmlFor="bulkAwardTokens"
                                 type="number"
                                 name="amounts"
+                                required
                             />
                             <TextInputField
                                 label="Reason for bulk granting"
@@ -398,6 +403,7 @@ class Admin extends Component {
                                 htmlFor="bulkAwardTokens"
                                 type="text"
                                 name="reason"
+                                required
                             />
                             <Button type="submit" id="bulkAwardButton" marginLeft={8}>Bulk Grant</Button>
                         </form>
@@ -418,6 +424,7 @@ class Admin extends Component {
                                 htmlFor="addAdmin"
                                 type="text"
                                 name="address"
+                                required
                             />
                             <TextInputField
                                 label="Reason for adding (optional)"
@@ -425,6 +432,7 @@ class Admin extends Component {
                                 htmlFor="addAdmin"
                                 type="text"
                                 name="reason"
+                                required
                             />
                             <Button type="submit" id="addAdmin" marginLeft={8}>Add</Button>
                         </form>
@@ -443,6 +451,7 @@ class Admin extends Component {
                                 htmlFor="removeAdmin"
                                 type="text"
                                 name="address"
+                                required
                             />
                             <TextInputField
                                 label="Reason for removing (optional)"
@@ -450,6 +459,7 @@ class Admin extends Component {
                                 htmlFor="removeAdmin"
                                 type="text"
                                 name="reason"
+                                required
                             />
                             <Button type="submit" id="removeAdmin" marginLeft={8}>Remove</Button>
                         </form>
@@ -468,6 +478,7 @@ class Admin extends Component {
                                 htmlFor="checkAdmin"
                                 type="text"
                                 name="address"
+                                required
                             />
                             <Button type="submit" id="checkAdmin" marginLeft={8}>Check</Button>
                         </form>
@@ -488,6 +499,7 @@ class Admin extends Component {
                                 htmlFor="burnTokens"
                                 type="text"
                                 name="address"
+                                required
                             />
                             <TextInputField
                                 label={"Amount of " + this.props.state.contract.tokenSymbol}
@@ -495,6 +507,7 @@ class Admin extends Component {
                                 htmlFor="burnTokens"
                                 type="number"
                                 name="amount"
+                                required
                             />
                             <TextInputField
                                 label="Reason for burning"
@@ -502,6 +515,7 @@ class Admin extends Component {
                                 htmlFor="burnTokens"
                                 type="text"
                                 name="reason"
+                                required
                             />
                             <Button type="submit" id="burnTokens" marginLeft={8}>Burn</Button>
                         </form>
@@ -521,6 +535,7 @@ class Admin extends Component {
                             htmlFor={emergencyStopId}
                             type="text"
                             name="reason"
+                            required
                         />
                         <Button intent={contractEnabled ? "danger" : "warning"} iconBefore={contractEnabled ? "ban-circle" : "warning-sign"} type="submit" id={emergencyStopId} marginLeft={8}>
                             {contractEnabled ? "Activate Emergency Stop" : "Re-enable Contract"}
