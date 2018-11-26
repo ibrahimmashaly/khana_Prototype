@@ -7,7 +7,7 @@ import React, { Component } from 'react'
 class App extends Component {
 
     // Update this value so we don't have to transverse the entire blockchain to find events
-    contractDeployBlockNumber = 3403078 // BDLAMS on Rinkeby
+    contractDeployBlockNumber = 3406096 // BDLAMS on Rinkeby
     grantsUrl = "https://goo.gl/4YMGrW"
 
     render() {
