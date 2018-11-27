@@ -59,11 +59,11 @@ class Admin extends Component {
         }
 
         // Update latest ipfsHash and combinedLogHistory
-        let contractState = this.props.state.contract
-        contractState.latestIpfsHash = ipfsHash
+        let state = this.props.state
+        state.contract.latestIpfsHash = ipfsHash
+        state.contract.combinedLogHistory.unshift(txDict)
 
-        contractState.combinedLogHistory.unshift(txDict)
-        this.setState({ contract: contractState })
+        await this.props.updateStaticState(state)
         this.props.updateState('Success!', message, 1);
     }
 
@@ -173,7 +173,7 @@ class Admin extends Component {
         // Record the award details on IPFS audit log
         let auditInstance = new Audit(this.props)
         let timeStamp = Date.now()
-        let ipfsHash = await auditInstance.recordAward(timeStamp, address, amount, reason)
+        let ipfsHash = await auditInstance.recordBurn(timeStamp, address, amount, reason)
         this.props.updateLoadingMessage('Burn added to IPFS audit file successfully', 'Please confirm the ethereum transaction via your wallet and wait for it to confirm.', 0)
 
         let khanaTokenInstance = this.props.state.contract.instance

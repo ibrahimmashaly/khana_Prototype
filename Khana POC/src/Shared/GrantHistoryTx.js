@@ -25,6 +25,16 @@ class GrantHistoryTx extends Component {
                     let path = auditJson.tokenActivity.awards[id] != null ? 
                         auditJson.tokenActivity.awards[id] :
                         auditJson.tokenActivity.awardsBulk[id]
+                    
+                    // If there was an error recording on IPFS for a certain reason...
+                    // Check Admin minting process if this occurs again
+                    if (path == null) {
+                        tx.reason = "*Could not load reason*"
+                        console.log("ID does not exist: " + id)
+                        console.log("Tx: " + JSON.stringify(tx))
+                        break
+                    }
+
                     tx.reason = path.reason
                     break
                 case LogTypes.burn:
@@ -43,6 +53,7 @@ class GrantHistoryTx extends Component {
                     tx.reason = auditJson.tokenAdmin.emergencyStop[id].reason
                     break
                 default:
+                    console.log("default called")
                     break
             }
             newCombinedList.push(tx)
@@ -105,7 +116,7 @@ class GrantHistoryTx extends Component {
                             window.open(url, "_blank")
                         }}
                     >
-                        See transaction details in block {tx.blockNumber}
+                        See transaction details (B# {tx.blockNumber})
                     </Menu.Item>
 
                     <Menu.Item

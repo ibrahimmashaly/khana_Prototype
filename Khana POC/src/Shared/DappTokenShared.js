@@ -283,6 +283,7 @@ class TokenShared extends Component {
             if (updatedState.contract.latestIpfsHash != null) {
                 updatedState.contract.combinedLogHistory = newCombined
             }
+
             callback(updatedState)
         })
     }

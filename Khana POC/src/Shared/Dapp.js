@@ -49,7 +49,7 @@ class Dapp extends Component {
 
     // Update state directly from children
     updateStaticState = async (state) => {
-        this.setState(state)
+        await this.setState(state)
     }
 
     // Updates loading / status message
@@ -140,6 +140,7 @@ class Dapp extends Component {
                         <Admin
                             state={this.state}
                             updateState={this.updateState}
+                            updateStaticState={this.updateStaticState}
                             updateLoadingMessage={this.updateLoadingMessage}
                         />
                     }
