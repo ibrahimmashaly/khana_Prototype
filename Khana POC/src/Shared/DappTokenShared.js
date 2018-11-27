@@ -4,17 +4,13 @@ import { LogTypes } from '../utils/helpers';
 
 class TokenShared extends Component {
 
-    static eventParams = {
-        fromBlock: 0, //contractDeployBlockNumber,
-        toBlock: 'latest'
-    }
-
     // Setup
 
-    static defaultState = {
+    defaultState = {
         web3: null,
         contract: {
             instance: null,
+            startingBlock: 0,
             fundsInstance: null,
             address: '',
             tokenName: '',
@@ -44,8 +40,8 @@ class TokenShared extends Component {
         navigation: 0, // Used for knowing where we are in the navigation 'tabs'
     }
 
-    static setupDefaultState = async () => {
-        return TokenShared.defaultState
+    setupDefaultState = async () => {
+        return this.defaultState
     }
 
     static setupWeb3 = async () => {
@@ -59,6 +55,11 @@ class TokenShared extends Component {
     static setupContracts = async (state, web3, tokenContract, bondingCurveContract, callback) => {
         tokenContract.setProvider(web3.currentProvider)
         bondingCurveContract.setProvider(web3.currentProvider)
+
+        let eventParams = {
+            fromBlock: state.contract.startingBlock,
+            toBlock: 'latest'
+        }
 
         var contractInstance;
         var name;
@@ -95,7 +96,7 @@ class TokenShared extends Component {
                 return contractInstance.checkIfAdmin.call(accounts[0])
             }).then((isAdmin) => {
 
-                let allAuditedEvents = contractInstance.LogAuditHash({}, TokenShared.eventParams)
+                let allAuditedEvents = contractInstance.LogAuditHash({}, eventParams)
 
                 allAuditedEvents.get((err, result) => {
                     if (err) {
@@ -141,9 +142,14 @@ class TokenShared extends Component {
     // Updating
 
     // Get latest events from blockchain emitted events
-    static updateAuditLogs = async (state, contractDeployBlockNumber, callback) => {
+    static updateAuditLogs = async (state, callback) => {
         let logicContractInstance = state.contract.instance
         
+        let eventParams = {
+            fromBlock: state.contract.startingBlock,
+            toBlock: 'latest'
+        }
+
         if (logicContractInstance == null) {
             // callback(null, "Contract instance not yet loaded")
             return
@@ -156,11 +162,6 @@ class TokenShared extends Component {
         let logAdminAdded = []
         let logAdminRemoved = []
         let logEmergencyStop = []
-
-        let eventParams = {
-            fromBlock: 0, //contractDeployBlockNumber,
-            toBlock: 'latest'
-        }
 
         let allEvents = logicContractInstance.allEvents(eventParams)
         allEvents.get((err, results) => {
@@ -286,29 +287,45 @@ class TokenShared extends Component {
         })
     }
 
-    static updateLatestIpfsHash = async (state, callback) => {
-        let allAuditedEvents = state.contract.instance.LogAuditHash({}, TokenShared.eventParams)
-
-        allAuditedEvents.get((err, result) => {
-            if (err) {
-                callback(null, "Error loading log events")
+    static updateLatestIpfsHash = (state) => {
+        return new Promise((resolve, reject) => {
+            let eventParams = {
+                fromBlock: state.contract.startingBlock,
+                toBlock: 'latest'
             }
 
-            // get latest audit file via IPFS hash
-            let auditHistory = result.map((log) => {
-                return {
-                    blockNumber: log.blockNumber,
-                    txHash: log.transactionHash,
-                    ipfsHash: log.args.ipfsHash
+            let allAuditedEvents = state.contract.instance.LogAuditHash({}, eventParams)
+
+            allAuditedEvents.get((err, result) => {
+                if (err) {
+                    reject(err)
                 }
+
+                // get latest audit file via IPFS hash
+                let auditHistory = result.map((log) => {
+                    return {
+                        blockNumber: log.blockNumber,
+                        txHash: log.transactionHash,
+                        ipfsHash: log.args.ipfsHash
+                    }
+                })
+
+                allAuditedEvents.stopWatching()
+                let ipfsEventLogged = auditHistory.length > 0 ? auditHistory[auditHistory.length - 1] : [{ ipfsHash: "" }]
+
+                let updatedState = state
+                updatedState.contract.latestIpfsHash = ipfsEventLogged.ipfsHash
+                resolve(updatedState)
             })
+        })
+    }
 
-            allAuditedEvents.stopWatching()
-            let ipfsEventLogged = auditHistory.length > 0 ? auditHistory[auditHistory.length - 1] : [{ ipfsHash: "" }]
-
-            let updatedState = state
-            updatedState.contract.latestIpfsHash = ipfsEventLogged.ipfsHash
-            callback(updatedState)
+    static getBalance = (state, address) => {
+        return new Promise((resolve, reject) => {
+            state.web3.eth.getBalance(address, (err, result) => {
+                if (err) { reject(err); return }
+                resolve(result)
+            })
         })
     }
 
@@ -320,6 +337,7 @@ class TokenShared extends Component {
         let fundsInstance = state.contract.fundsInstance
         var supply
         var tokenBalance
+        var contractStatus
 
         khanaTokenInstance.getSupply.call().then((newSupply) => {
             supply = (web3.fromWei(newSupply, 'ether')).toString(10);
@@ -327,20 +345,23 @@ class TokenShared extends Component {
         }).then((newBalance) => {
             tokenBalance = (web3.fromWei(newBalance, 'ether')).toString(10);
             return khanaTokenInstance.contractEnabled()
-        }).then((contractStatus) => {
-            web3.eth.getBalance(fundsInstance.address, (err, result) => {
-                let newState = state
-                newState.contract.totalSupply = supply
-                newState.contract.address = khanaTokenInstance.address
-                newState.contract.contractEnabled = contractStatus
-                newState.contract.ethAmount = (web3.fromWei(result, 'ether')).toString(10);
-                newState.user.currentAddress = accounts[0]
-                newState.user.tokenBalance = tokenBalance
-                newState.app.status = message ? message : ''
-                newState.app.isLoading = false
+        }).then((status) => {
+            contractStatus = status
+            return TokenShared.getBalance(state, fundsInstance.address)
+        }).then((balance) => {
+            let newState = state
+            newState.contract.totalSupply = supply
+            newState.contract.address = khanaTokenInstance.address
+            newState.contract.contractEnabled = contractStatus
+            newState.contract.ethAmount = (web3.fromWei(balance, 'ether')).toString(10);
+            newState.user.currentAddress = accounts[0]
+            newState.user.tokenBalance = tokenBalance
+            newState.app.status = message ? message : ''
+            newState.app.isLoading = false
 
-                TokenShared.updateLatestIpfsHash(newState, callback)
-            })
+            return TokenShared.updateLatestIpfsHash(newState)
+        }).then((updatedState) => {
+            callback(updatedState)
         }).catch((error) => {
             callback(null, error)
         })

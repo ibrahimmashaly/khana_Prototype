@@ -1,5 +1,3 @@
-import TokenShared from './DappTokenShared'
-
 import React, { Component } from 'react'
 import { notificationNotify, notificationSuccess, notificationWarning, notificationDanger} from '../utils/helpers'
 import Navigation from './Navigation'
@@ -7,9 +5,11 @@ import UserDashboard from './UserDashboard'
 import Grants from './Grants'
 import GrantHistory from './GrantHistory'
 import Admin from './Admin';
+import TokenShared from './DappTokenShared';
 
 class Dapp extends Component {
 
+    tokenShared = new TokenShared()
     tokenContract;
     bondingCurveContract;
     
@@ -24,7 +24,9 @@ class Dapp extends Component {
 
     async componentWillMount() {
         // Setup default state values
-        let defaultState = await TokenShared.setupDefaultState()
+        let tokenShared = new TokenShared()
+        tokenShared.defaultState.contract.startingBlock = this.props.startingBlock
+        let defaultState = await tokenShared.setupDefaultState()
         this.setState(defaultState)
 
         // Setup web3 instance
@@ -41,7 +43,7 @@ class Dapp extends Component {
 
     // Used by other components to refresh parent state including contracts
     updateState = async (message, description, alertLevel) => {
-        TokenShared.updateState(this.state, this.callbackSetState, message)
+        await TokenShared.updateState(this.state, this.callbackSetState, message)
         this.createNotification(message, description, alertLevel)
     }
 

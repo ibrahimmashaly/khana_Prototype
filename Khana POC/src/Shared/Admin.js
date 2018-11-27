@@ -2,8 +2,7 @@ import React, { Component } from 'react'
 import Audit from './Audit'
 import { LogTypes } from '../utils/helpers';
 
-
-import { Pane, Text, TextInputField, Heading, Button } from 'evergreen-ui'
+import { Pane, TextInputField, Heading, Button } from 'evergreen-ui'
 
 class Admin extends Component {
 

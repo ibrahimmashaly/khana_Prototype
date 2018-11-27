@@ -2,7 +2,7 @@ import React, { Component } from 'react'
 import GrantHistoryTx from './GrantHistoryTx'
 import TokenShared from './DappTokenShared'
 
-import { Pane, Button } from 'evergreen-ui'
+import { Pane } from 'evergreen-ui'
 
 class GrantHistory extends Component {
 
@@ -15,10 +15,8 @@ class GrantHistory extends Component {
     }
 
     getAuditLogs = async () => {
-        // set loading signal
-        let startBlockNumber = this.props.startingBlock
         let state = this.props.state
-        await TokenShared.updateAuditLogs(state, startBlockNumber, this.updateState)
+        await TokenShared.updateAuditLogs(state, this.updateState)
     }
 
     updateState = async (newState) => {

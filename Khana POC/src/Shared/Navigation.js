@@ -4,6 +4,18 @@ import { Pane, Heading, Tablist, Tab, Spinner, Alert } from 'evergreen-ui'
 
 class Navigation extends Component {
 
+    componentDidMount() {
+
+        // This is a bug fix / hack for Coinbase Wallet app - 27/11/2018
+        // For some reason, their app does not update the state properly on first load,
+        // causing problems on the UserDashboard display of information
+
+        setTimeout(() => {
+            let state = this.props.state
+            this.props.updateStaticState(state)
+        }, 4000)
+    }
+
     handleNavigation = (value) => {
         let state = this.props.state
         state.navigation = value

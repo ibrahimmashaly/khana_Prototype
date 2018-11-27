@@ -8,7 +8,7 @@ class App extends Component {
 
     // Update this value so we don't have to transverse the entire blockchain to find events
     contractDeployBlockNumber = 3406096 // BDLAMS on Rinkeby
-    grantsUrl = "https://goo.gl/4YMGrW"
+    grantsUrl = "https://goo.gl/ZamsJx"
 
     render() {
         return (
