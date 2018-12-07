@@ -56,9 +56,10 @@ class Dapp extends Component {
     updateLoadingMessage = async(message, description, alertLevel) => {
         let appState = this.state.app
         appState.status = message
+        appState.detailedStatus = description
         appState.isLoading = true
         this.setState({ app: appState })
-        this.createNotification(message, description, alertLevel)
+        // this.createNotification(message, description, alertLevel)
     }
 
     createNotification = async (message, description, alertLevel) => {

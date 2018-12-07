@@ -1,6 +1,18 @@
 import React, { Component } from 'react';
+import Modal from 'react-modal'
 
-import { Pane, Heading, Tablist, Tab, Spinner, Alert } from 'evergreen-ui'
+import { Pane, Heading, Tablist, Tab, Spinner, Alert, Text } from 'evergreen-ui'
+
+const customStyles = {
+    content: {
+        top: '50%',
+        left: '50%',
+        right: 'auto',
+        bottom: 'auto',
+        marginRight: '-50%',
+        transform: 'translate(-50%, -50%)'
+    }
+}
 
 class Navigation extends Component {
 
@@ -51,11 +63,21 @@ class Navigation extends Component {
                 </Alert>
                 }
                 <Pane display="flex" padding={16}>
-                    {this.props.state.app.isLoading &&
-                    <Pane alignItems="center">
-                        <Spinner size={24} /> 
-                    </Pane>
-                    }
+                    <Modal
+                        ariaHideApp={false}
+                        isOpen={this.props.state.app.isLoading}
+                        // onRequestClose={this.closeModal}
+                        style={customStyles}
+                        contentLabel={this.props.state.app.status}
+                    >
+                        <Pane display="flex" alignItems="center" justifyContent="center" marginBottom={16}>
+                            <Spinner/>
+                        </Pane>
+                        <Heading>{this.props.state.app.status}</Heading>
+                        <Text>{this.props.state.app.detailedStatus}</Text>
+
+                    </Modal>
+
                     <Pane>
                         <Heading size={100}>Khana v.0.2: 📈 <strong>{this.props.state.contract.tokenName} ({this.props.state.contract.tokenSymbol})</strong></Heading>
                     </Pane>

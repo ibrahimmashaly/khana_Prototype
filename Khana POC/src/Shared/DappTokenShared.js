@@ -34,6 +34,7 @@ class TokenShared extends Component {
         },
         app: {
             status: 'Loading...',
+            detailedStatus: '',
             isLoading: true,
             version: 0.1
         },
