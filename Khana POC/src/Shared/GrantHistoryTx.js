@@ -314,9 +314,9 @@ class GrantHistoryTx extends Component {
             case LogTypes.adminRemoved:
                 return "Admin -"
             case LogTypes.emergencyStop:
-                return "E. Stop"
+                return "Bugfix"
             case LogTypes.emergencyResume:
-                return "E. Resume"
+                return "Resume"
             default:
                 return null
         }

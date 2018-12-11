@@ -69,8 +69,6 @@ class Admin extends Component {
         state.contract.reloadNeeded = true
         state.app.isLoading = false
 
-        console.log(txDict)
-
         await this.props.updateStaticState(state)
         this.props.createNotification('Success!', message, 1);
     }

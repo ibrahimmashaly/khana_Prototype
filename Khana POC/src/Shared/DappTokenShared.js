@@ -122,8 +122,6 @@ class TokenShared extends Component {
                     let updatedState = state
                     updatedState.contract.latestIpfsHash = ipfsEventLogged.ipfsHash
                     
-                    console.log(ipfsEventLogged.ipfsHash)
-
                     updatedState.contract.instance = contractInstance
                     updatedState.contract.fundsInstance = fundsInstance
                     updatedState.contract.tokenName = name
