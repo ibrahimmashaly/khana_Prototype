@@ -98,7 +98,7 @@ class Audit extends Component {
             content: Buffer.from(JSON.stringify(auditDict))
         }
 
-        this.props.updateLoadingMessage('Creating IPFS file (may take a while)...')
+        this.props.updateLoadingMessage('Creating IPFS file', 'This may take a while...')
 
         // Write description to IPFS, return hash
         const results = await ipfs.add(ipfsContent)

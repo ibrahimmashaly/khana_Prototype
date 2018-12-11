@@ -61,6 +61,13 @@ export function copy(object, textToCopy) {
     )
 }
 
+export async function checkForOldSession(lastLoadTimestamp, callback) {
+    // Reload if > 300s (5 min)
+    if (Date.now() - lastLoadTimestamp > 10000) {
+        await callback("Refreshing session", "One moment...")
+    }
+}
+
 //
 // Notifications
 //

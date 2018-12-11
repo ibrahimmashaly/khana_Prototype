@@ -73,8 +73,10 @@ class Navigation extends Component {
                         <Pane display="flex" alignItems="center" justifyContent="center" marginBottom={16}>
                             <Spinner/>
                         </Pane>
-                        <Heading>{this.props.state.app.status}</Heading>
-                        <Text>{this.props.state.app.detailedStatus}</Text>
+                        <Pane alignItems="center" justifyContent="center">
+                            <Heading>{this.props.state.app.status}</Heading>
+                            <Text>{this.props.state.app.detailedStatus}</Text>
+                        </Pane>
 
                     </Modal>
 

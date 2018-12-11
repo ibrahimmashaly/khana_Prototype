@@ -10,6 +10,7 @@ class GrantHistory extends Component {
         if (this.props.state.contract.combinedLogHistory.length === 0 ||
             this.props.state.contract.reloadNeeded === true
         ) {
+            this.props.updateLoadingMessage("Loading audit logs", "Fetching from IPFS...")
             this.getAuditLogs()
         }
     }
@@ -20,7 +21,9 @@ class GrantHistory extends Component {
     }
 
     updateState = async (newState) => {
-        this.props.updateStaticState(newState)
+        let finishedLoadingState = newState
+        finishedLoadingState.app.isLoading = false
+        this.props.updateStaticState(finishedLoadingState)
     }
 
     render() {

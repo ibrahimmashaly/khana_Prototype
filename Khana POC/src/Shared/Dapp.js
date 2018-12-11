@@ -43,27 +43,27 @@ class Dapp extends Component {
 
     // Used by other components to refresh parent state including contracts
     updateState = async (message, description, alertLevel) => {
-        await TokenShared.updateState(this.state, this.callbackSetState, message)
-        this.createNotification(message, description, alertLevel)
+        let notificationMsg = message != null ? message : "Loading..."
+        let notificationDes = description != null ? description : ""
+        this.updateLoadingMessage(notificationMsg, notificationDes)
+        await TokenShared.updateState(this.state, this.callbackSetState, notificationMsg)
     }
 
     // Update state directly from children
     updateStaticState = async (state) => {
-        await this.setState(state)
+        this.setState(state)
     }
 
     // Updates loading / status message
-    updateLoadingMessage = async(message, description, alertLevel) => {
+    updateLoadingMessage = async (message, description, alertLevel) => {
         let appState = this.state.app
         appState.status = message
         appState.detailedStatus = description
         appState.isLoading = true
         this.setState({ app: appState })
-        // this.createNotification(message, description, alertLevel)
     }
 
     createNotification = async (message, description, alertLevel) => {
-        // console.log(message, description, alertLevel)
         if (message != null) {
             switch (alertLevel) {
                 case 0: notificationNotify(message, description); break
@@ -81,7 +81,7 @@ class Dapp extends Component {
     callbackSetState = async (state, error, refreshState) => {
         if (error != null) {
             console.log("Shit, an error: " + error)
-            this.updateLoadingMessage("Something went wrong 🤔", error.toString(), 4)
+            this.updateLoadingMessage("Something went wrong 🤔. Please Reload.", error.toString(), 4)
             return
         }
 
@@ -140,6 +140,7 @@ class Dapp extends Component {
                     {this.state.navigation === 3 &&
                         <Admin
                             state={this.state}
+                            createNotification={this.createNotification}
                             updateState={this.updateState}
                             updateStaticState={this.updateStaticState}
                             updateLoadingMessage={this.updateLoadingMessage}

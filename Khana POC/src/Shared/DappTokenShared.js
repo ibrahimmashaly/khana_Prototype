@@ -36,7 +36,8 @@ class TokenShared extends Component {
             status: 'Loading...',
             detailedStatus: '',
             isLoading: true,
-            version: 0.1
+            version: 0.1,
+            lastLoadTimestamp: Date.now()
         },
         navigation: 0, // Used for knowing where we are in the navigation 'tabs'
     }
@@ -121,6 +122,8 @@ class TokenShared extends Component {
                     let updatedState = state
                     updatedState.contract.latestIpfsHash = ipfsEventLogged.ipfsHash
                     
+                    console.log(ipfsEventLogged.ipfsHash)
+
                     updatedState.contract.instance = contractInstance
                     updatedState.contract.fundsInstance = fundsInstance
                     updatedState.contract.tokenName = name
@@ -332,45 +335,48 @@ class TokenShared extends Component {
     }
 
     // Updates state and gets live data from contracts
-    static updateState = async (state, callback, message) => {
-        let web3 = state.web3
-        let khanaTokenInstance = state.contract.instance
-        let accounts = state.user.accounts
-        let fundsInstance = state.contract.fundsInstance
-        var supply
-        var tokenBalance
-        var contractStatus
+    static updateState = (state, callback, message) => {
+        return new Promise((resolve, reject) => {
+            let web3 = state.web3
+            let khanaTokenInstance = state.contract.instance
+            let accounts = state.user.accounts
+            let fundsInstance = state.contract.fundsInstance
+            var supply
+            var tokenBalance
+            var contractStatus
 
-        khanaTokenInstance.getSupply.call().then((newSupply) => {
-            supply = (web3.fromWei(newSupply, 'ether')).toString(10);
-            return khanaTokenInstance.balanceOf(accounts[0])
-        }).then((newBalance) => {
-            tokenBalance = (web3.fromWei(newBalance, 'ether')).toString(10);
-            return khanaTokenInstance.contractEnabled()
-        }).then((status) => {
-            contractStatus = status
-            return TokenShared.getBalance(state, fundsInstance.address)
-        }).then((balance) => {
-            let newState = state
-            newState.contract.totalSupply = supply
-            newState.contract.address = khanaTokenInstance.address
-            newState.contract.contractEnabled = contractStatus
-            newState.contract.ethAmount = (web3.fromWei(balance, 'ether')).toString(10);
-            newState.user.currentAddress = accounts[0]
-            newState.user.tokenBalance = tokenBalance
-            newState.app.status = message ? message : ''
-            newState.app.isLoading = false
+            khanaTokenInstance.getSupply.call().then((newSupply) => {
+                supply = (web3.fromWei(newSupply, 'ether')).toString(10);
+                return khanaTokenInstance.balanceOf(accounts[0])
+            }).then((newBalance) => {
+                tokenBalance = (web3.fromWei(newBalance, 'ether')).toString(10);
+                return khanaTokenInstance.contractEnabled()
+            }).then((status) => {
+                contractStatus = status
+                return TokenShared.getBalance(state, fundsInstance.address)
+            }).then((balance) => {
+                let newState = state
+                newState.contract.totalSupply = supply
+                newState.contract.address = khanaTokenInstance.address
+                newState.contract.contractEnabled = contractStatus
+                newState.contract.ethAmount = (web3.fromWei(balance, 'ether')).toString(10);
+                newState.user.currentAddress = accounts[0]
+                newState.user.tokenBalance = tokenBalance
+                newState.app.status = message ? message : ''
+                newState.app.isLoading = false
+                newState.app.lastLoadTimestamp = Date.now()
 
-            return TokenShared.updateLatestIpfsHash(newState)
-        }).then((updatedState) => {
-            callback(updatedState)
-        }).catch((error) => {
-            callback(null, error)
+                return TokenShared.updateLatestIpfsHash(newState)
+            }).then((updatedState) => {
+                resolve(callback(updatedState))
+            }).catch((error) => {
+                reject(callback(null, error))
+            })
+
+            // if (message) {
+            //     console.log(message);
+            // }
         })
-
-        if (message) {
-            console.log(message);
-        }
     }
 }
 

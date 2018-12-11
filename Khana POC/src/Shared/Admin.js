@@ -1,10 +1,14 @@
 import React, { Component } from 'react'
 import Audit from './Audit'
-import { LogTypes } from '../utils/helpers';
+import { LogTypes, checkForOldSession } from '../utils/helpers';
 
 import { Pane, TextInputField, Heading, Button } from 'evergreen-ui'
 
 class Admin extends Component {
+    
+    refreshIfNeeded = async () => {
+        await checkForOldSession(this.props.state.app.lastLoadTimestamp, this.props.updateState)
+    }
 
     // Used to finalise each transaction that should be properly recorded on the audit logs
     finaliseTx = async (response, ipfsHash, type, message) => {
@@ -62,9 +66,13 @@ class Admin extends Component {
         let state = this.props.state
         state.contract.latestIpfsHash = ipfsHash
         state.contract.combinedLogHistory.unshift(txDict)
+        state.contract.reloadNeeded = true
+        state.app.isLoading = false
+
+        console.log(txDict)
 
         await this.props.updateStaticState(state)
-        this.props.updateState('Success!', message, 1);
+        this.props.createNotification('Success!', message, 1);
     }
 
     awardTokens = async (event) => {
@@ -82,6 +90,8 @@ class Admin extends Component {
             this.props.updateState('All details must be filled in to award tokens', '', 2)
             return
         }
+
+        await this.refreshIfNeeded()
 
         // Record the award details on IPFS audit log
         let auditInstance = new Audit(this.props)
@@ -129,6 +139,8 @@ class Admin extends Component {
             return
         }
 
+        await this.refreshIfNeeded()
+
         // Record the award details on IPFS audit log
         let auditInstance = new Audit(this.props)
         let timeStamp = Date.now()
@@ -170,6 +182,8 @@ class Admin extends Component {
         let amount = web3.toWei(event.target.amount.value, 'ether')
         let reason = event.target.reason.value
 
+        await this.refreshIfNeeded()
+
         // Record the award details on IPFS audit log
         let auditInstance = new Audit(this.props)
         let timeStamp = Date.now()
@@ -201,11 +215,18 @@ class Admin extends Component {
 
     checkAdmin = async (event) => {
         event.preventDefault();
+        let adminAddress = event.target.address.value
+
+        await this.refreshIfNeeded()
         this.props.updateLoadingMessage('Checking if address is an admin...')
 
         let khanaTokenInstance = this.props.state.contract.instance
-        khanaTokenInstance.checkIfAdmin(event.target.address.value).then((isAdmin) => {
-            this.props.updateState('User ' + (isAdmin ? 'is ' : 'is not ') + 'an admin', '', (isAdmin ? 1 : 2))
+        khanaTokenInstance.checkIfAdmin(adminAddress).then((isAdmin) => {
+            this.props.createNotification('User ' + (isAdmin ? 'is ' : 'is not ') + 'an admin', '', (isAdmin ? 1 : 2))
+
+            let state = this.props.state
+            state.app.isLoading = false
+            this.props.updateStaticState(state)
         }).catch((error) => {
             this.props.updateState('Admin error', error.message, 2)
         })
@@ -213,10 +234,12 @@ class Admin extends Component {
 
     addAdmin = async (event) => {
         event.preventDefault();
-        this.props.updateLoadingMessage('Adding user as an admin...')
 
         let address = event.target.address.value
         let reason = event.target.reason.value
+
+        await this.refreshIfNeeded()
+        this.props.updateLoadingMessage('Adding user as an admin...')
 
         // Record the details on IPFS audit log
         let auditInstance = new Audit(this.props)
@@ -242,10 +265,12 @@ class Admin extends Component {
 
     removeAdmin = async (event) => {
         event.preventDefault()
-        this.props.updateLoadingMessage('Removing user as an admin...')
 
         let address = event.target.address.value
         let reason = event.target.reason.value
+
+        await this.refreshIfNeeded()
+        this.props.updateLoadingMessage('Removing user as an admin...')
 
         // Record the details on IPFS audit log
         let auditInstance = new Audit(this.props)
@@ -271,9 +296,11 @@ class Admin extends Component {
 
     tokenEmergencyStop = async (event) => {
         event.preventDefault();
-        this.props.updateLoadingMessage('Processing emergency stop...')
 
         let reason = event.target.reason.value
+
+        await this.refreshIfNeeded()
+        this.props.updateLoadingMessage('Processing emergency stop...')
 
         // Record the details on IPFS audit log
         let auditInstance = new Audit(this.props)
@@ -299,9 +326,11 @@ class Admin extends Component {
 
     tokenResumeContract = async (event) => {
         event.preventDefault();
-        this.props.updateLoadingMessage('Re-enabling contracts...')
 
         let reason = event.target.reason.value
+
+        await this.refreshIfNeeded()
+        this.props.updateLoadingMessage('Re-enabling contracts...')
 
         // Record the details on IPFS audit log
         let auditInstance = new Audit(this.props)
@@ -426,7 +455,7 @@ class Admin extends Component {
                                 required
                             />
                             <TextInputField
-                                label="Reason for adding (optional)"
+                                label="Reason for adding"
                                 placeholder="..."
                                 htmlFor="addAdmin"
                                 type="text"
@@ -453,7 +482,7 @@ class Admin extends Component {
                                 required
                             />
                             <TextInputField
-                                label="Reason for removing (optional)"
+                                label="Reason for removing"
                                 placeholder="..."
                                 htmlFor="removeAdmin"
                                 type="text"
