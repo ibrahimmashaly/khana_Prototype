@@ -30,7 +30,8 @@ class TokenShared extends Component {
             accounts: null,
             currentAddress: null,
             tokenBalance: 0,
-            isAdmin: false
+            isAdmin: false,
+            isOwner: false
         },
         app: {
             status: 'Loading...',
@@ -67,6 +68,7 @@ class TokenShared extends Component {
         var name;
         var symbol;
         var fundsInstance;
+        var isOwner;
 
         // getAccounts is a callback :(
         web3.eth.getAccounts((error, accounts) => {
@@ -95,6 +97,9 @@ class TokenShared extends Component {
             }).then((bondingFundsInstance) => {
                 fundsInstance = bondingFundsInstance
             }).then(() => {
+                return contractInstance.owner.call()
+            }).then((ownerAddress) => {
+                isOwner = ownerAddress === accounts[0]
                 return contractInstance.checkIfAdmin.call(accounts[0])
             }).then((isAdmin) => {
 
@@ -132,6 +137,7 @@ class TokenShared extends Component {
 
                     updatedState.user.accounts = accounts
                     updatedState.user.isAdmin = isAdmin
+                    updatedState.user.isOwner = isOwner
 
                     callback(updatedState, null, true)
                 })

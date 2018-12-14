@@ -21,7 +21,6 @@ export const LogTypes = {
     emergencyResume: "emergencyResume"
 }
 
-
 //
 // Clipboard operations
 //
@@ -61,8 +60,12 @@ export function copy(object, textToCopy) {
     )
 }
 
+//
+// Other operations
+//
+
 export async function checkForOldSession(lastLoadTimestamp, callback) {
-    // Reload if > 300s (5 min)
+    // Reload if > 10s
     if (Date.now() - lastLoadTimestamp > 10000) {
         await callback("Refreshing session", "One moment...")
     }

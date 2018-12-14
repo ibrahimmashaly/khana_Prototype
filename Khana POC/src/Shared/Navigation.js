@@ -25,7 +25,7 @@ class Navigation extends Component {
         setTimeout(() => {
             let state = this.props.state
             this.props.updateStaticState(state)
-        }, 4000)
+        }, 3000)
     }
 
     handleNavigation = (value) => {
@@ -90,6 +90,10 @@ class Navigation extends Component {
                     {this.createTab('Grant History', 2)}
                     {this.props.state.user.isAdmin &&
                         this.createTab('Admin', 3)
+                    }
+
+                    {this.props.state.user.isOwner &&
+                        this.createTab('Owner', 4)
                     }
                 </Tablist>
             </Pane>

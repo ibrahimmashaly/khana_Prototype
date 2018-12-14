@@ -1,5 +1,6 @@
 import { Component } from 'react'
-import ipfs from '../utils/ipfs';
+import ipfs from '../utils/ipfs'
+import { LogTypes } from '../utils/helpers'
 
 class Audit extends Component {
 
@@ -257,6 +258,78 @@ class Audit extends Component {
     }
 
 
+
+
+
+    /**
+     * @dev Used to finalise each transaction that should be properly recorded on the audit logs
+     * @param response The response from the node when the event was emitted
+     * @param ipfsHash The IPFS hash which was used for this tx
+     * @param type The LogTypes enum to determine what action this was
+     * @param message The message to show to the end user when it is completed
+     * @return IPFS hash of new audit file.
+    */
+    finaliseTx = async (response, ipfsHash, type, message) => {
+        let web3 = this.props.state.web3
+        let args = response.args
+
+        let txDict = {
+            ipfsHash: args.ipfsHash,
+            txHash: response.transactionHash,
+            reason: '',
+            blockNumber: response.blockNumber,
+            timeStamp: response.args.timeStamp,
+            type: type
+        }
+
+        switch (type) {
+            case LogTypes.award:
+                txDict["adminAddress"] = args.minter
+                txDict["awardedTo"] = args.awardedTo
+                txDict["amount"] = (web3.fromWei(args.amount, 'ether')).toString(10)
+                break
+            case LogTypes.bulkAward:
+                txDict["bulkCount"] = args.bulkCount.toString(10)
+                txDict["adminAddress"] = args.minter
+
+                // Force a reload in Grant History to show new bulk awards
+                this.props.state.contract.reloadNeeded = true
+                break
+            case LogTypes.burn:
+                txDict["burnFrom"] = args.burnFrom
+                txDict["adminAddress"] = args.adminAddress
+                txDict["amount"] = (web3.fromWei(args.amount, 'ether')).toString(10)
+                break
+            case LogTypes.adminAdded:
+                txDict["account"] = args.account
+                txDict["adminAddress"] = args.adminAddress
+                break
+            case LogTypes.adminRemoved:
+                txDict["account"] = args.account
+                txDict["adminAddress"] = args.adminAddress
+                break
+            case LogTypes.emergencyStop:
+                txDict["activated"] = true
+                txDict["adminAddress"] = args.adminAddress
+                break
+            case LogTypes.emergencyResume:
+                txDict["activated"] = false
+                txDict["adminAddress"] = args.adminAddress
+                break
+            default:
+                break
+        }
+
+        // Update latest ipfsHash and combinedLogHistory
+        let state = this.props.state
+        state.contract.latestIpfsHash = ipfsHash
+        state.contract.combinedLogHistory.unshift(txDict)
+        state.contract.reloadNeeded = true
+        state.app.isLoading = false
+
+        await this.props.updateStaticState(state)
+        this.props.createNotification('Success!', message, 1);
+    }
 
 
     // loadJson = new Promise(function (resolve, reject) {
