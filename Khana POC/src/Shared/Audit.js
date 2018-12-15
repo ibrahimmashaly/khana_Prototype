@@ -33,6 +33,9 @@ class Audit extends Component {
      * @param "previousImportedAuditHashes": an array of the IPFS hashes of previous
      * audit files. These are recorded when the system is upgraded and we need to 
      * import previous balances and records.
+     * @param "tokenMigrations": an array of the details of any previous token
+     * migrations, e.g. when a new contract is deployed and old token balances need
+     * to be migrated over.
      * 
      * "tokenActivity": All the transactional records of admins when creating and
      * destroying tokens.
@@ -66,7 +69,8 @@ class Audit extends Component {
                 "emergencyStop": {},
                 "moveFunds": {},
                 "auditChain": [],
-                "previousImportedAuditHashes": []
+                "previousImportedAuditHashes": [],
+                "tokenMigrations": {}
             },
             "tokenActivity": {
                 "burns": {},
@@ -86,6 +90,7 @@ class Audit extends Component {
     createAndUploadNewAuditFile = async (auditDict) => {
 
         let currentIpfsHash = this.props.state.contract.latestIpfsHash
+        console.log(currentIpfsHash)
         if (currentIpfsHash != null) {
             auditDict.tokenAdmin.auditChain.unshift(currentIpfsHash)
         }
@@ -250,11 +255,27 @@ class Audit extends Component {
         return await this.createAndUploadNewAuditFile(auditHistory)
     }
 
-    recordImportAuditFile = async () => {
-        // import entries from tokenAdmin (add to auditChain)
-        // import entries from tokenActivity
+    /**
+     * @dev Used for migrating old token balances to a new contract
+     * @param isActivating Bool of what action is being taken when calling.
+     * @param reasons The reason for the removal.
+     * @return IPFS hash of new audit file.
+    */
+    migrateTokenBalances = async (timeStamp, oldContract, previousIpfsHash, reason) => {
+        let auditFile = await ipfs.files.cat('/ipfs/' + previousIpfsHash)
+        let auditJson = JSON.parse(auditFile.toString('utf8'))
 
-        // update totalTokenSupply
+        let migration = {
+            "oldContract": oldContract,
+            "previousIpfsHash": previousIpfsHash,
+            "reason": reason
+        }
+
+        if (auditJson.tokenAdmin.tokenMigrations == null) {
+            auditJson.tokenAdmin["tokenMigrations"] = {}
+        }
+        auditJson.tokenAdmin.tokenMigrations[timeStamp + "-" + this.props.state.user.currentAddress] = migration
+        return await this.createAndUploadNewAuditFile(auditJson)
     }
 
 
@@ -291,8 +312,6 @@ class Audit extends Component {
             case LogTypes.bulkAward:
                 txDict["bulkCount"] = args.bulkCount.toString(10)
                 txDict["adminAddress"] = args.minter
-
-                // Force a reload in Grant History to show new bulk awards
                 this.props.state.contract.reloadNeeded = true
                 break
             case LogTypes.burn:
@@ -315,6 +334,11 @@ class Audit extends Component {
             case LogTypes.emergencyResume:
                 txDict["activated"] = false
                 txDict["adminAddress"] = args.adminAddress
+                break
+            case LogTypes.tokenMigration:
+                txDict["adminAddress"] = args.caller
+                txDict["oldContract"] = args.oldContract
+                this.props.state.contract.reloadNeeded = true
                 break
             default:
                 break

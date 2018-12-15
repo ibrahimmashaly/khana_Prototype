@@ -88,6 +88,14 @@ contract KhanaToken is MintableToken {
         string ipfsHash,
         uint256 timeStamp
     );
+    event LogTokenMigration(
+        address indexed caller,
+        address indexed oldContract,
+        address[] accounts,
+        uint256[] amounts,
+        string ipfsHash,
+        uint256 timeStamp
+    );
 
     /**
      * @notice We want a single emitted event to record the most recent ipfs hash
@@ -181,9 +189,38 @@ contract KhanaToken is MintableToken {
         onlyAdmins
         contractIsEnabled
     {
+        _award(_account, _amount, _ipfsHash, _timeStamp, false);
+    }
+
+    /**
+     * @dev Internal function to award tokens. Admins should always use public award().
+     * @notice See public award() notices.
+     * @param _account The address of the user to awarded.
+     * @param _amount The amount to be awarded.
+     * @param _ipfsHash The IPFS hash of the latest audit log, which includes the
+     * details and reason for the current award of tokens.
+     * @param _timeStamp Used as a unique ID (together with msg.sender) to display
+     * details of transactions when auditing
+     * @param _isQuiet Used to indicate whether events should be emitted. Only internal
+     * events should have this set to false
+     */
+    function _award(
+        address _account,
+        uint256 _amount,
+        string _ipfsHash,
+        uint256 _timeStamp,
+        bool _isQuiet
+    )
+        internal
+        onlyAdmins
+        contractIsEnabled
+    {
         mint(_account, _amount);
-        emit LogAwarded(_account, msg.sender, _amount, _ipfsHash, _timeStamp);
-        emit LogAuditHash(_ipfsHash);
+
+        if (!_isQuiet) {
+            emit LogAwarded(_account, msg.sender, _amount, _ipfsHash, _timeStamp);
+            emit LogAuditHash(_ipfsHash);
+        }
     }
 
     /**
@@ -214,6 +251,34 @@ contract KhanaToken is MintableToken {
         contractIsEnabled
         returns (uint)
     {
+        return _awardBulk(_accounts, _amounts, _ipfsHash, _timeStamp, false);
+    }
+
+    /**
+     * @dev Internal bulk awards. Admins should always use public awardBulk(). We
+     * don't want admins quietly making awards.
+     * @notice See notices in public awardBulk()
+     * @param _accounts The addresses of the users to awarded.
+     * @param _amounts The amounts to be awarded to each address.
+     * @param _ipfsHash The IPFS hash of the latest audit log, which includes the
+     * details and reason for the current awards of tokens.
+     * @param _timeStamp Used as a unique ID (together with msg.sender) to display
+     * details of transactions when auditing
+     * @param _isQuiet Used to indicate whether events should be emitted. Only internal
+     * events should have this set to false
+     */
+    function _awardBulk(
+        address[] _accounts,
+        uint256[] _amounts,
+        string _ipfsHash,
+        uint256 _timeStamp,
+        bool _isQuiet
+    )
+        internal
+        onlyAdmins
+        contractIsEnabled
+        returns (uint)
+    {
         require(_accounts.length < BULK_AWARD_MAX_COUNT, "Too many accounts");
         require(_amounts.length < BULK_AWARD_MAX_COUNT, "Too many amounts");
         require(_amounts.length == 1 || _amounts.length == _accounts.length, "Invalid amounts given");
@@ -223,15 +288,19 @@ contract KhanaToken is MintableToken {
         
         for (uint i = 0; i < _accounts.length; ++i) {
             uint256 amount = sameBulkAmount ? _amounts[0] : _amounts[i];
-            bool success = _awardQuiet(_accounts[i], amount, _ipfsHash, _timeStamp);
+            bool success = _awardQuiet(_accounts[i], amount, _ipfsHash, _timeStamp, _isQuiet);
             if (success) {
                 bulkCount++;
             } else {
                 emit LogBulkAwardedFailure(_accounts[i], amount);
             }
         }
-        emit LogBulkAwardedSummary(bulkCount, msg.sender, _ipfsHash, _timeStamp);
-        // No need to emit LogAuditHash(_ipfsHash) as award() already emits the event via _awardQuiet()
+
+        if (!_isQuiet) {
+            emit LogBulkAwardedSummary(bulkCount, msg.sender, _ipfsHash, _timeStamp);
+            // No need to emit LogAuditHash(_ipfsHash) as award() already emits the event via _awardQuiet()
+        }
+
         return bulkCount;
     }
 
@@ -239,16 +308,49 @@ contract KhanaToken is MintableToken {
         address _account, 
         uint256 _amount, 
         string _ipfsHash, 
-        uint256 _timeStamp
+        uint256 _timeStamp,
+        bool _isQuiet
     )
-        internal 
+        internal
+        onlyAdmins
+        contractIsEnabled
         returns (bool) 
     {
         if (_account == address(0)) return false; // No awards for the black hole
         if (_account == address(this)) return false; // No awards for this token
         if (_amount <= 0) return false; // No awards for zero or less amounts
-        award(_account, _amount, _ipfsHash, _timeStamp);
+        _award(_account, _amount, _ipfsHash, _timeStamp, _isQuiet);
         return true;
+    }
+
+    /**
+     * @dev A temporary function used to mirgrate old balances. Only valid for brand new contracts.
+     * @notice This function *may* be deprecated in the next major release, when logic is separated 
+     * from the token contract.
+     * @notice _amounts must either be an array of 1 or an array with the same length as accounts
+     * @param _accounts The addresses of the users to awarded.
+     * @param _amounts The amounts to be awarded to each address.
+     * @param _ipfsHash The IPFS hash of the latest audit log, which includes the
+     * details and reason for the current awards of tokens.
+     * @param _timeStamp Used as a unique ID (together with msg.sender) to display
+     * details of transactions when auditing
+     */
+    function migrateBalancesFromOldContract(
+        address _oldContract,
+        address[] _accounts,
+        uint256[] _amounts,
+        string _ipfsHash,
+        uint256 _timeStamp
+    )
+        public
+        onlyOwner
+        contractIsEnabled
+        returns (bool)
+    {
+        require(getSupply() == 0, "Tokens already exist");
+        _awardBulk(_accounts, _amounts, _ipfsHash, _timeStamp, true);
+        emit LogTokenMigration(msg.sender, _oldContract, _accounts, _amounts, _ipfsHash, _timeStamp);
+        emit LogAuditHash(_ipfsHash);
     }
 
     /**
@@ -326,6 +428,7 @@ contract KhanaToken is MintableToken {
         address oldContract = fundsContract;
         fundsContract = _contract;
         emit LogFundsContractChanged(oldContract, _contract, _timeStamp);
+        // emit LogAuditHash(_ipfsHash);
     }
 
     // TODO: - moveFunds function when changing contracts

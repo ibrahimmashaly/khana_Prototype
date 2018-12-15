@@ -18,7 +18,8 @@ export const LogTypes = {
     adminAdded: "adminAdded",
     adminRemoved: "adminRemoved",
     emergencyStop: "emergencyStop",
-    emergencyResume: "emergencyResume"
+    emergencyResume: "emergencyResume",
+    tokenMigration: "tokenMigration"
 }
 
 //

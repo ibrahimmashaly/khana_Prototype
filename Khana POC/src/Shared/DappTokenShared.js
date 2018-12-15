@@ -37,7 +37,7 @@ class TokenShared extends Component {
             status: 'Loading...',
             detailedStatus: '',
             isLoading: true,
-            version: 0.1,
+            version: 0.2,
             lastLoadTimestamp: Date.now()
         },
         navigation: 0, // Used for knowing where we are in the navigation 'tabs'
@@ -84,6 +84,7 @@ class TokenShared extends Component {
 
             tokenContract.deployed().then((tokenInstance) => {
                 contractInstance = tokenInstance
+                console.log(contractInstance)
             }).then(() => {
                 return contractInstance.name()
             }).then((instanceName) => {
@@ -170,6 +171,7 @@ class TokenShared extends Component {
         let logAdminAdded = []
         let logAdminRemoved = []
         let logEmergencyStop = []
+        let logTokenMigration = []
 
         let allEvents = logicContractInstance.allEvents(eventParams)
         allEvents.get((err, results) => {
@@ -269,10 +271,29 @@ class TokenShared extends Component {
                             type: LogTypes.emergencyResume
                         })
                         break
+                    case "LogTokenMigration":
+                        logTokenMigration.unshift({
+                            oldContract: args.oldContract,
+                            ipfsHash: args.ipfsHash,
+                            timeStamp: args.timeStamp,
+                            adminAddress: args.caller,
+                            txHash: auditTxHash,
+                            blockNumber: auditBlockNumber,
+                            reason: '',
+                            type: LogTypes.tokenMigration
+                        })
+                        break
                     default:
                         break
                 }
             })
+
+            // do the same for oldContract in LogTokenMigrations
+
+
+
+
+
 
             // TODO: - 
             // LogFundsContractChanged
@@ -280,7 +301,7 @@ class TokenShared extends Component {
 
             allEvents.stopWatching()
 
-            let newCombined = logAwarded.concat(logBurned, logAdminAdded, logAdminRemoved, logEmergencyStop)
+            let newCombined = logAwarded.concat(logBurned, logAdminAdded, logAdminRemoved, logEmergencyStop, logTokenMigration)
                 .sort((a, b) => {
                 return a.blockNumber < b.blockNumber ? 1 : -1
             })
