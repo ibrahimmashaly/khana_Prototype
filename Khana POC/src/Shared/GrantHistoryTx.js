@@ -55,6 +55,9 @@ class GrantHistoryTx extends Component {
                 case LogTypes.tokenMigration:
                     tx.reason = auditJson.tokenAdmin.tokenMigrations[id].reason
                     break
+                case LogTypes.adminMigration:
+                    tx.reason = auditJson.tokenAdmin.adminMigrations[id].reason
+                    break
                 default:
                     console.log("default called")
                     break
@@ -141,6 +144,11 @@ class GrantHistoryTx extends Component {
                     { copy(
                         this.createMenuItemToCopy('Copy receiver address'),
                         tx.awardedTo,
+                    )}
+
+                    {copy(
+                        this.createMenuItemToCopy('Copy new admin address'),
+                        tx.account,
                     )}
                 </Menu.Group>
             </Menu>
@@ -310,6 +318,31 @@ class GrantHistoryTx extends Component {
         )
     }
 
+    renderAdminMigration = (tx) => {
+        return (
+            <Table.Row
+                key={tx.txHash}
+                onClick={() => {
+                    // alert('selected')
+                }}
+                height='auto'>
+                <Table.TextCell flexBasis={80} flexShrink={1} flexGrow={0}>{this.getTxTypeText(tx.type)}</Table.TextCell>
+                <Table.TextCell flexBasis={88} flexShrink={1} flexGrow={0}>{shortenAddress(tx.adminAddress, false)}</Table.TextCell>
+                <Table.TextCell flexBasis={80} flexShrink={1} flexGrow={0}>n/a</Table.TextCell>
+                <Table.TextCell flexBasis={88} flexShrink={1} flexGrow={0}>n/a</Table.TextCell>
+                {this.renderReason(tx)}
+                <Table.Cell width={48} flex="none">
+                    <Popover
+                        content={this.renderRowMenu(tx)}
+                        position={Position.BOTTOM_RIGHT}
+                    >
+                        <IconButton icon="more" height={24} appearance="minimal" />
+                    </Popover>
+                </Table.Cell>
+            </Table.Row>
+        )
+    }
+
     renderRows = () => {
         return this.props.state.contract.combinedLogHistory.map(tx => {
             switch (tx.type) {
@@ -327,6 +360,8 @@ class GrantHistoryTx extends Component {
                     return this.renderEmergencyStop(tx)
                 case LogTypes.tokenMigration:
                     return this.renderTokenMigration(tx)
+                case LogTypes.adminMigration:
+                    return this.renderAdminMigration(tx)
                 default:
                     return null
             }
@@ -348,7 +383,9 @@ class GrantHistoryTx extends Component {
             case LogTypes.emergencyResume:
                 return "Resume"
             case LogTypes.tokenMigration:
-                return "Upgrade"
+                return "Upgrade (Tokens)"
+            case LogTypes.adminMigration:
+                return "Upgrade (Admins)"
             default:
                 return null
         }

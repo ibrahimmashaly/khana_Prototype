@@ -91,8 +91,17 @@ contract KhanaToken is MintableToken {
     event LogTokenMigration(
         address indexed caller,
         address indexed oldContract,
+        uint256 oldVersion,
         address[] accounts,
         uint256[] amounts,
+        string ipfsHash,
+        uint256 timeStamp
+    );
+    event LogBulkAdminAdded(
+        address indexed caller,
+        address indexed oldContract,
+        uint256 oldVersion,
+        address[] accounts,
         string ipfsHash,
         uint256 timeStamp
     );
@@ -188,8 +197,9 @@ contract KhanaToken is MintableToken {
         public
         onlyAdmins
         contractIsEnabled
+        returns (bool)
     {
-        _award(_account, _amount, _ipfsHash, _timeStamp, false);
+        return _award(_account, _amount, _ipfsHash, _timeStamp, false);
     }
 
     /**
@@ -214,13 +224,16 @@ contract KhanaToken is MintableToken {
         internal
         onlyAdmins
         contractIsEnabled
+        returns (bool)
     {
-        mint(_account, _amount);
+        bool success = mint(_account, _amount);
 
-        if (!_isQuiet) {
+        if (!_isQuiet && success) {
             emit LogAwarded(_account, msg.sender, _amount, _ipfsHash, _timeStamp);
             emit LogAuditHash(_ipfsHash);
         }
+
+        return success;
     }
 
     /**
@@ -319,8 +332,7 @@ contract KhanaToken is MintableToken {
         if (_account == address(0)) return false; // No awards for the black hole
         if (_account == address(this)) return false; // No awards for this token
         if (_amount <= 0) return false; // No awards for zero or less amounts
-        _award(_account, _amount, _ipfsHash, _timeStamp, _isQuiet);
-        return true;
+        return _award(_account, _amount, _ipfsHash, _timeStamp, _isQuiet);
     }
 
     /**
@@ -328,6 +340,8 @@ contract KhanaToken is MintableToken {
      * @notice This function *may* be deprecated in the next major release, when logic is separated 
      * from the token contract.
      * @notice _amounts must either be an array of 1 or an array with the same length as accounts
+     * @param _oldContract The address of the old contract that is being migrated
+     * @param _oldVersion The Khana version of the old contract being migrated
      * @param _accounts The addresses of the users to awarded.
      * @param _amounts The amounts to be awarded to each address.
      * @param _ipfsHash The IPFS hash of the latest audit log, which includes the
@@ -337,6 +351,7 @@ contract KhanaToken is MintableToken {
      */
     function migrateBalancesFromOldContract(
         address _oldContract,
+        uint256 _oldVersion,
         address[] _accounts,
         uint256[] _amounts,
         string _ipfsHash,
@@ -349,8 +364,9 @@ contract KhanaToken is MintableToken {
     {
         require(getSupply() == 0, "Tokens already exist");
         _awardBulk(_accounts, _amounts, _ipfsHash, _timeStamp, true);
-        emit LogTokenMigration(msg.sender, _oldContract, _accounts, _amounts, _ipfsHash, _timeStamp);
+        emit LogTokenMigration(msg.sender, _oldContract, _oldVersion, _accounts, _amounts, _ipfsHash, _timeStamp);
         emit LogAuditHash(_ipfsHash);
+        return true;
     }
 
     /**
@@ -498,6 +514,39 @@ contract KhanaToken is MintableToken {
     function addAdmin(address _account, string _ipfsHash, uint256 _timeStamp) public onlyAdmins {
         adminAccounts[_account] = true;
         emit LogAdminAdded(_account, msg.sender, _ipfsHash, _timeStamp);
+        emit LogAuditHash(_ipfsHash);
+    }
+
+    /**
+     * @dev Bulk adding admins. This can only be used when a contract is brand new.
+     * @notice This function *may* be deprecated in the next major release, when logic is separated 
+     * from the token contract.
+     * @param _oldContract The address of the old contract that is being migrated
+     * @param _oldVersion The Khana version of the old contract being migrated
+     * @param _accounts The addresses of the previously valid admins.
+     * @param _ipfsHash The IPFS hash of the latest audit log, which includes the
+     * details and reason for the current awards of tokens.
+     * @param _timeStamp Used as a unique ID (together with msg.sender) to display
+     * details of transactions when auditing
+     */
+    function bulkAddAdmin(
+        address _oldContract,
+        uint256 _oldVersion,
+        address[] _accounts,
+        string _ipfsHash,
+        uint256 _timeStamp
+    )
+        public
+        onlyOwner
+        contractIsEnabled
+        returns (uint)
+    {
+        require(getSupply() == 0, "Tokens already exist, only possible with new contract");
+
+        for (uint i = 0; i < _accounts.length; ++i) {
+            adminAccounts[_accounts[i]] = true;
+        }
+        emit LogBulkAdminAdded(msg.sender, _oldContract, _oldVersion, _accounts, _ipfsHash, _timeStamp);
         emit LogAuditHash(_ipfsHash);
     }
 

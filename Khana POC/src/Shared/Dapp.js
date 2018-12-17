@@ -57,6 +57,12 @@ class Dapp extends Component {
 
     // Updates loading / status message
     updateLoadingMessage = async (message, description, alertLevel) => {
+        let details = ": " + description
+        if (description !== "" || description !== null) {
+            details = ""
+        }
+        console.log(message + details)
+        
         let appState = this.state.app
         appState.status = message
         appState.detailedStatus = description

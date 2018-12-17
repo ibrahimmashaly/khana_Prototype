@@ -70,7 +70,8 @@ class Audit extends Component {
                 "moveFunds": {},
                 "auditChain": [],
                 "previousImportedAuditHashes": [],
-                "tokenMigrations": {}
+                "tokenMigrations": {},
+                "adminMigrations": {}
             },
             "tokenActivity": {
                 "burns": {},
@@ -90,9 +91,11 @@ class Audit extends Component {
     createAndUploadNewAuditFile = async (auditDict) => {
 
         let currentIpfsHash = this.props.state.contract.latestIpfsHash
-        console.log(currentIpfsHash)
+
         if (currentIpfsHash != null) {
             auditDict.tokenAdmin.auditChain.unshift(currentIpfsHash)
+            auditDict.khanaInfo.version = this.props.state.app.version
+            auditDict.khanaInfo.tokenSupply = this.props.state.contract.tokenSupply
         }
 
         if (auditDict.tokenAdmin.auditChain.length > 5) {
@@ -256,17 +259,62 @@ class Audit extends Component {
     }
 
     /**
-     * @dev Used for migrating old token balances to a new contract
-     * @param isActivating Bool of what action is being taken when calling.
-     * @param reasons The reason for the removal.
+     * @dev Used for migrating previous admins to a new contract
+     * @param timeStamp timeStamp of when this action was taken
+     * @param oldContract The address of the old contract that is being migrated from
+     * @param oldContractVersion The version of the old contract being migrated from
+     * @param previousIpfsHash The previous IPFS hash that had audit records
+     * @param reason The reasons for the migration
+     * @param blockNumber The blockNumber when this action was taken
      * @return IPFS hash of new audit file.
     */
-    migrateTokenBalances = async (timeStamp, oldContract, previousIpfsHash, reason) => {
+    migrateAdminAccounts = async (timeStamp, oldContract, oldContractVersion, previousIpfsHash, reason, blockNumber) => {
         let auditFile = await ipfs.files.cat('/ipfs/' + previousIpfsHash)
         let auditJson = JSON.parse(auditFile.toString('utf8'))
 
         let migration = {
             "oldContract": oldContract,
+            "oldContractVersion": oldContractVersion,
+            "previousIpfsHash": previousIpfsHash,
+            "reason": reason
+        }
+
+        if (auditJson.tokenAdmin.adminMigrations == null) {
+            auditJson.tokenAdmin["adminMigrations"] = {}
+        }
+        auditJson.tokenAdmin.adminMigrations[timeStamp + "-" + this.props.state.user.currentAddress] = migration
+        auditJson.khanaInfo.lastUpgradeBlock = blockNumber
+        auditJson.tokenInfo.tokenName = this.props.state.contract.tokenName
+        auditJson.tokenInfo.tokenSymbol = this.props.state.contract.tokenSymbol
+        auditJson.tokenInfo.tokenAddress = this.props.state.contract.tokenAddress
+        auditJson.tokenInfo.vaultAddress = this.props.state.contract.vaultAddress
+        auditJson.tokenInfo.logicAddress = this.props.state.contract.logicAddress
+
+        return await this.createAndUploadNewAuditFile(auditJson)
+    }
+
+    /**
+     * @dev Used for migrating old token balances to a new contract
+     * @param timeStamp timeStamp of when this action was taken
+     * @param oldContract The address of the old contract that is being migrated from
+     * @param oldContractVersion The version of the old contract being migrated from
+     * @param previousIpfsHash The previous IPFS hash that had audit records
+     * @param reason The reasons for the migration
+     * @param blockNumber The blockNumber when this action was taken
+     * @return IPFS hash of new audit file.
+    */
+    migrateTokenBalances = async (timeStamp, oldContract, oldContractVersion, previousIpfsHash, reason, blockNumber) => {
+        let auditFile = await ipfs.files.cat('/ipfs/' + previousIpfsHash)
+        let auditJson = JSON.parse(auditFile.toString('utf8'))
+
+        // parse if it is version 0.0, 0.1, 0.2 etc
+        // TODO
+
+        
+
+        let migration = {
+            "oldContract": oldContract,
+            "oldContractVersion": oldContractVersion,
             "previousIpfsHash": previousIpfsHash,
             "reason": reason
         }
@@ -275,6 +323,13 @@ class Audit extends Component {
             auditJson.tokenAdmin["tokenMigrations"] = {}
         }
         auditJson.tokenAdmin.tokenMigrations[timeStamp + "-" + this.props.state.user.currentAddress] = migration
+        auditJson.khanaInfo.lastUpgradeBlock = blockNumber
+        auditJson.tokenInfo.tokenName = this.props.state.contract.tokenName
+        auditJson.tokenInfo.tokenSymbol = this.props.state.contract.tokenSymbol
+        auditJson.tokenInfo.tokenAddress = this.props.state.contract.tokenAddress
+        auditJson.tokenInfo.vaultAddress = this.props.state.contract.vaultAddress
+        auditJson.tokenInfo.logicAddress = this.props.state.contract.logicAddress
+
         return await this.createAndUploadNewAuditFile(auditJson)
     }
 
@@ -338,11 +393,20 @@ class Audit extends Component {
             case LogTypes.tokenMigration:
                 txDict["adminAddress"] = args.caller
                 txDict["oldContract"] = args.oldContract
+                txDict["oldContractVersion"] = (web3.fromWei(args.oldVersion, 'ether')).toString(10)
+                this.props.state.contract.reloadNeeded = true
+                break
+            case LogTypes.adminMigration:
+                txDict["adminAddress"] = args.caller
+                txDict["oldContract"] = args.oldContract
+                txDict["oldContractVersion"] = (web3.fromWei(args.oldVersion, 'ether')).toString(10)
                 this.props.state.contract.reloadNeeded = true
                 break
             default:
                 break
         }
+
+        this.props.state.contract.reloadNeeded = true
 
         // Update latest ipfsHash and combinedLogHistory
         let state = this.props.state

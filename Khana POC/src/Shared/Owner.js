@@ -1,11 +1,9 @@
 import React, { Component } from 'react'
 import Audit from './Audit'
 import { LogTypes, checkForOldSession } from '../utils/helpers'
-import { Pane, TextInputField, Heading, Button, FilePicker } from 'evergreen-ui'
+import { Pane, TextInputField, Heading, Text, Button, FilePicker } from 'evergreen-ui'
 
 export default class Owner extends Component {
-    
-    khanaTokenInstance = this.props.state.contract.instance
 
     refreshIfNeeded = async () => {
         await checkForOldSession(this.props.state.app.lastLoadTimestamp, this.props.updateState)
@@ -70,11 +68,19 @@ export default class Owner extends Component {
         })
     }
 
-    performTokenMigration = async (event) => {
+    performMigration = async (event) => {
         event.preventDefault()
-        document.getElementById("performTokenMigration").disabled = true
 
-        let oldContractAddress = event.target.oldContract.value
+        if (this.props.state.contract.totalSupply > 0) {
+            this.props.createNotification('Error!', "Migration is only possible for brand new contract deployments. I.e. zero token supply.", 2);
+            return
+        }
+
+        document.getElementById("performMigration").disabled = true
+
+        let web3 = this.props.state.web3
+
+        let oldContractVersion = web3.toWei(event.target.oldVersion.value, 'ether')
         let previousIpfsHash = event.target.ipfsHash.value
         let reason = event.target.reason.value
 
@@ -83,60 +89,175 @@ export default class Owner extends Component {
         let newState = this.props.state
         newState.contract.latestIpfsHash = previousIpfsHash
 
-        let web3 = this.props.state.web3
+        let timeStamp = Date.now()
+        let blockNumber = await this._getBlockNumber()
         let oldTokenInstance = await this._getOldTokenContract()
-        let toAddresses = await this._getRecieversFromTransferEvents(oldTokenInstance)
-        let balances = await this._getTokenBalances(oldTokenInstance, toAddresses)
+        let oldContractAddress = this.state.oldTokenAddress
+
+        let params = {
+            "web3": web3,
+            "oldContractVersion": oldContractVersion, 
+            "previousIpfsHash": previousIpfsHash, 
+            "reason": reason, 
+            "timeStamp": timeStamp, 
+            "blockNumber": blockNumber, 
+            "oldTokenInstance": oldTokenInstance, 
+            "oldContractAddress": oldContractAddress
+        }
+
+        let newIpfsHash = await this._performAdminMigration(params)
+
+        params.previousIpfsHash = newIpfsHash
+
+        await this._performTokenMigration(params)
+
+        document.getElementById("performMigration").disabled = false
+        this.props.createNotification('Migration complete!', "Admins and token balances have been migrated.", 1);
+    }
+
+    _performAdminMigration = async (params) => {
+        let bulkAdminAdds = await this._getAdminsFromAdminEvents(true, params.oldTokenInstance, true)
+        let adminAddAddresses = await this._getAdminsFromAdminEvents(true, params.oldTokenInstance)
+        adminAddAddresses = adminAddAddresses.concat(bulkAdminAdds)
+        let adminRemoveAddresses = await this._getAdminsFromAdminEvents(false, params.oldTokenInstance)
+        let adminAddresses = [...new Set(
+            adminAddAddresses.filter(x => !(new Set(adminRemoveAddresses).has(x)))
+        )]
 
         // Record the migration details on IPFS audit log
-    
+
         let auditInstance = new Audit(this.props)
-        let timeStamp = Date.now()
-        let ipfsHash = await auditInstance.migrateTokenBalances(timeStamp, oldContractAddress, previousIpfsHash, reason)
-        this.props.updateLoadingMessage('Migration recorded to IPFS audit file successfully', 'Please confirm the ethereum transaction via your wallet and wait for it to confirm.', 0)
+        let ipfsHash = await auditInstance.migrateAdminAccounts(params.timeStamp, params.oldContractAddress, params.oldContractVersion, params.previousIpfsHash, params.reason, params.blockNumber)
+        this.props.updateLoadingMessage('Admin migration recorded to IPFS audit file successfully', 'Please confirm the ethereum transaction via your wallet and wait for it to confirm.', 0)
 
         let khanaTokenInstance = this.props.state.contract.instance
         let accounts = this.props.state.user.accounts
 
-        khanaTokenInstance.migrateBalancesFromOldContract(oldContractAddress, toAddresses, balances, ipfsHash, timeStamp, { from: accounts[0], gas: 500000, gasPrice: web3.toWei(5, 'gwei') }).then((txResult) => {
+        return new Promise((resolve, reject) => {
+            khanaTokenInstance.bulkAddAdmin(params.oldContractAddress, params.oldContractVersion, adminAddresses, ipfsHash, params.timeStamp, { from: accounts[0], gas: 500000, gasPrice: params.web3.toWei(5, 'gwei') }).then((txResult) => {
 
-            this.props.updateLoadingMessage('Waiting for transaction to confirm...')
+                this.props.updateLoadingMessage('Waiting for transaction to confirm...')
 
-            let migrationEvent = khanaTokenInstance.LogTokenMigration({ fromBlock: 'latest' }, (err, response) => {
-                if (response.blockNumber >= txResult.receipt.blockNumber) {
-                    let message = "Transaction confirmed and tokens migration successful."
-                    auditInstance.finaliseTx(response, ipfsHash, LogTypes.tokenMigration, message)
-                    migrationEvent.stopWatching()
-                    document.getElementById("performTokenMigration").disabled = false
-                }
+                let migrationEvent = khanaTokenInstance.LogBulkAdminAdded({ fromBlock: 'latest' }, (err, response) => {
+                    if (response.blockNumber >= txResult.receipt.blockNumber) {
+                        let message = "Admin migration successful."
+                        auditInstance.finaliseTx(response, ipfsHash, LogTypes.tokenMigration, message)
+                        migrationEvent.stopWatching()
+                        resolve(ipfsHash)
+                    }
+                })
+            }).catch((error) => {
+                reject(error)
+                this.props.updateState('Admin migration error', error.message, 3)
             })
+        })
+        
+    }
 
-            let migrationAwardFailures = khanaTokenInstance.LogBulkAwardedFailure({ fromBlock: 'latest' }, (err, response) => {
-                if (response.blockNumber >= txResult.receipt.blockNumber) {
-                    console.log(response)
-                    migrationAwardFailures.stopWatching()
-                }
+    _performTokenMigration = async (params) => {
+        let toAddresses = await this._getRecieversFromTransferEvents(params.oldTokenInstance)
+        let balances = await this._getTokenBalances(params.oldTokenInstance, toAddresses)
+
+        // Record the migration details on IPFS audit log
+    
+        let auditInstance = new Audit(this.props)
+        let ipfsHash = await auditInstance.migrateTokenBalances(params.timeStamp, params.oldContractAddress, params.oldContractVersion, params.previousIpfsHash, params.reason, params.blockNumber)
+        this.props.updateLoadingMessage('Token migration recorded to IPFS audit file successfully', 'Please confirm the ethereum transaction via your wallet and wait for it to confirm.', 0)
+
+        let khanaTokenInstance = this.props.state.contract.instance
+        let accounts = this.props.state.user.accounts
+
+        return new Promise((resolve, reject) => {
+            khanaTokenInstance.migrateBalancesFromOldContract(params.oldContractAddress, params.oldContractVersion, toAddresses, balances, ipfsHash, params.timeStamp, { from: accounts[0], gas: 500000, gasPrice: params.web3.toWei(5, 'gwei') }).then((txResult) => {
+
+                this.props.updateLoadingMessage('Waiting for transaction to confirm...')
+
+                let migrationEvent = khanaTokenInstance.LogTokenMigration({ fromBlock: 'latest' }, (err, response) => {
+                    if (response.blockNumber >= txResult.receipt.blockNumber) {
+                        let message = "Tokens migration successful."
+                        auditInstance.finaliseTx(response, ipfsHash, LogTypes.tokenMigration, message)
+                        migrationEvent.stopWatching()
+                        resolve()
+                    }
+                })
+
+                let migrationAwardFailures = khanaTokenInstance.LogBulkAwardedFailure({ fromBlock: 'latest' }, (err, response) => {
+                    if (response.blockNumber >= txResult.receipt.blockNumber) {
+                        console.log(response)
+                        migrationAwardFailures.stopWatching()
+                    }
+                })
+
+            }).catch((error) => {
+                reject(error)
+                this.props.updateState('Token migration error', error.message, 3)
             })
+        })
+    }
 
-        }).catch((error) => {
-            this.props.updateState('Token migration error', error.message, 3)
-            document.getElementById("performTokenMigration").disabled = false;
+    _getBlockNumber = () => {
+        return new Promise((resolve, reject) => {
+            let web3 = this.props.state.web3
+            web3.eth.getBlockNumber((error, result) => {
+                if (error) { reject(error) }
+                resolve(result)
+            })
         })
     }
 
     _getOldTokenContract = () => {
         this.props.updateLoadingMessage('Getting old token information', '', 0)
-
+        let web3 = this.props.state.web3
         let oldTokenJson = this.state.oldTokenJson
 
         // Set up old contract
         const contract = require('truffle-contract')
         let oldTokenContract = contract(oldTokenJson)
-        oldTokenContract.setProvider(this.props.state.web3.currentProvider)
+        oldTokenContract.setProvider(web3.currentProvider)
 
         return new Promise(resolve => {
             oldTokenContract.deployed().then(oldTokenInstance => {
+                console.log(oldTokenContract.address)
+                this.setState({oldTokenAddress: oldTokenContract.address})
                 resolve(oldTokenInstance)
+            })
+        })
+    }
+
+    _getAdminsFromAdminEvents = (isAdded, oldTokenInstance, checkBulkAdd) => {
+        this.props.updateLoadingMessage('Getting old token information', 'Getting previously ' + (isAdded ? 'added' : 'removed') +  ' admins...', 0)
+        let eventParams = {
+            fromBlock: this.props.state.contract.startingBlock,
+            toBlock: 'latest'
+        }
+
+        let adminEvent
+        if (isAdded) {
+                adminEvent = checkBulkAdd ? 
+                            oldTokenInstance.LogBulkAdminAdded({}, eventParams) : 
+                            oldTokenInstance.LogAdminAdded({}, eventParams)
+        } else {
+            adminEvent = oldTokenInstance.LogAdminRemoved({}, eventParams)
+        }
+ 
+        return new Promise((resolve, reject) => {
+            adminEvent.get((err, result) => {
+                if (err) { reject(err) }
+
+                let adminAddresses
+                if (checkBulkAdd && result.length > 0) {
+                    console.log(result)
+                    adminAddresses = result[0].args.accounts
+                } else {
+                    adminAddresses = [...new
+                        Set(
+                            result.map(log => {
+                                return log.args.account
+                            })
+                        )]
+                }
+                adminEvent.stopWatching()
+                resolve(adminAddresses)
             })
         })
     }
@@ -226,50 +347,53 @@ export default class Owner extends Component {
                     </Pane>
                 </Pane>
 
-                {/* Token Migration */}
+                {/* Admin Migration */}
 
                 <Pane padding={14} marginBottom={16} background="redTint" borderRadius={5} border="default">
                     <Pane marginBottom={16}>
-                        <Heading size={400}>Perform token migration to new contract</Heading>
-                    </Pane>
-                    <Pane>
-                        <form onSubmit={this.performTokenMigration} id="performTokenMigration">
-                            <FilePicker
-                                required
-                                name="filePicker"
-                                width={250}
-                                marginBottom={24}
-                                onChange={files => this.parseFile(files[0])}
-                            />
+                        <Heading size={400}>Perform migration to new contract</Heading>
+                        <Text>Two transactions will be required, one for migrating admins, the other for migrating token balances</Text>
+                        <p></p>
+                        <FilePicker
+                            required
+                            name="filePicker"
+                            width={250}
+                            marginBottom={24}
+                            onChange={files => this.parseFile(files[0])}
+                        />
 
-                            <TextInputField
-                                label="Address of the old token contract on Rinkeby"
-                                placeholder="0x..."
-                                htmlFor="performTokenMigration"
-                                type="text"
-                                name="oldContract"
-                                required
-                            />
+                        <Pane marginBottom={16}>
+                            <form onSubmit={this.performMigration} id="performMigration">
 
-                            <TextInputField
-                                label="Latest IPFS hash for old contract audits"
-                                placeholder="..."
-                                htmlFor="performTokenMigration"
-                                type="text"
-                                name="ipfsHash"
-                                required
-                            />
+                                <TextInputField
+                                    label="Version of the old token contract"
+                                    placeholder="0.1"
+                                    htmlFor="performMigration"
+                                    type="text"
+                                    name="oldVersion"
+                                    required
+                                />
 
-                            <TextInputField
-                                label="Reason and details for migration"
-                                placeholder="..."
-                                htmlFor="performTokenMigration"
-                                type="text"
-                                name="reason"
-                                required
-                            />
-                            <Button type="submit" id="performTokenMigration" marginLeft={8}>Perform migration</Button>
-                        </form>
+                                <TextInputField
+                                    label="Latest IPFS hash for old contract audits"
+                                    placeholder="..."
+                                    htmlFor="performMigration"
+                                    type="text"
+                                    name="ipfsHash"
+                                    required
+                                />
+
+                                <TextInputField
+                                    label="Reason and details for migration"
+                                    placeholder="..."
+                                    htmlFor="performMigration"
+                                    type="text"
+                                    name="reason"
+                                    required
+                                />
+                                <Button type="submit" id="performMigration" marginLeft={8}>Perform migration</Button>
+                            </form>
+                        </Pane>
                     </Pane>
                 </Pane>
             </Pane>
