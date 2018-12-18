@@ -75,7 +75,6 @@ export default class Owner extends Component {
         let newAuditIpfsHash = await auditInstance.tempRecordAwards(event.target.ipfsHash.value)
         console.log(newAuditIpfsHash)
         return
-        // this.props.updateLoadingMessage('Admin migration recorded to IPFS audit file successfully', 'Please confirm the ethereum transaction via your wallet and wait for it to confirm.', 0)
 
     }
 
@@ -348,8 +347,16 @@ export default class Owner extends Component {
                     <Pane marginBottom={16}>
                         <Heading size={400}>Burn tokens belonging to community members</Heading>
                     </Pane>
+                    <FilePicker
+                        required
+                        name="filePicker"
+                        width={250}
+                        marginBottom={24}
+                        onChange={files => this.parseFile(files[0])}
+                    />
                     <Pane>
                         <form onSubmit={this.burnTokens} id="burnTokens">
+                        
                             <TextInputField
                                 label="Member's address"
                                 placeholder="0x...."
@@ -362,7 +369,7 @@ export default class Owner extends Component {
                                 label={"Amount of " + this.props.state.contract.tokenSymbol}
                                 placeholder="0.0"
                                 htmlFor="burnTokens"
-                                type="number"
+                                type="text"
                                 name="amount"
                                 required
                             />

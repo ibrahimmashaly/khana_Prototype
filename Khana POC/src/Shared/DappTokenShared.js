@@ -356,7 +356,7 @@ class TokenShared extends Component {
                             })
                             break
                         case "LogBulkAwardedFailure":
-                            console.log(result)
+                            // console.log(result)
                             break
                         default:
                             break
