@@ -1,6 +1,6 @@
 import { Component } from 'react'
 import ipfs from '../utils/ipfs'
-import { LogTypes } from '../utils/helpers'
+import { LogTypes, legacyTimeConverter } from '../utils/helpers'
 
 class Audit extends Component {
 
@@ -131,6 +131,36 @@ class Audit extends Component {
         }
 
         return auditJson
+    }
+
+    tempGetAuditJson = async (ipfsHash) => {
+        let auditJson
+
+        let auditFile = await ipfs.files.cat('/ipfs/' + ipfsHash)
+        auditJson = JSON.parse(auditFile.toString('utf8'))
+
+        return auditJson
+    }
+
+    tempRecordAwards = async (ipfsHash) => {
+        let auditJson = await this.createGenesisAuditJson()
+
+        let oldAwards = await this.tempGetAuditJson(ipfsHash)
+
+        oldAwards.forEach(award => {
+            let newSingleAward = {
+                "toAddress": award.toAddress,
+                "adminAddress": award.fromAddress,
+                "amount": award.amount,
+                "reason": award.reason
+            }
+
+            let time = legacyTimeConverter(award.timeStamp/1000)
+            let id = (time + award.fromAddress + award.toAddress + this.props.state.web3.fromWei(award.amount, 'ether')).toUpperCase()
+            auditJson.tokenActivity.awards[id] = newSingleAward
+        })
+
+        return await this.createAndUploadNewAuditFile(auditJson)
     }
 
     /**

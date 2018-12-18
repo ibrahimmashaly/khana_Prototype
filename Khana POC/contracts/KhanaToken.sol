@@ -620,4 +620,11 @@ contract KhanaToken is MintableToken {
         emit Transfer(_who, address(0), _value);
     }
 
+    /**
+     * @dev Self destruct method
+     */
+    function destroy() public onlyOwner {
+        selfdestruct(owner);
+    }
+
 }

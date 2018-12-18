@@ -68,6 +68,17 @@ export default class Owner extends Component {
         })
     }
 
+    updateOldIpfsFile = async (event) => {
+        event.preventDefault()
+
+        let auditInstance = new Audit(this.props)
+        let newAuditIpfsHash = await auditInstance.tempRecordAwards(event.target.ipfsHash.value)
+        console.log(newAuditIpfsHash)
+        return
+        // this.props.updateLoadingMessage('Admin migration recorded to IPFS audit file successfully', 'Please confirm the ethereum transaction via your wallet and wait for it to confirm.', 0)
+
+    }
+
     performMigration = async (event) => {
         event.preventDefault()
 
@@ -116,9 +127,15 @@ export default class Owner extends Component {
     }
 
     _performAdminMigration = async (params) => {
-        let bulkAdminAdds = await this._getAdminsFromAdminEvents(true, params.oldTokenInstance, true)
-        let adminAddAddresses = await this._getAdminsFromAdminEvents(true, params.oldTokenInstance)
-        adminAddAddresses = adminAddAddresses.concat(bulkAdminAdds)
+
+        let adminAddAddresses
+        if (Number(params.oldContractVersion) >= 0.2) {
+            let bulkAdminAdds = await this._getAdminsFromAdminEvents(true, params.oldTokenInstance, true)
+            adminAddAddresses = await this._getAdminsFromAdminEvents(true, params.oldTokenInstance)
+            adminAddAddresses = adminAddAddresses.concat(bulkAdminAdds)
+        } else {
+            adminAddAddresses = await this._getAdminsFromAdminEvents(true, params.oldTokenInstance)
+        }
         let adminRemoveAddresses = await this._getAdminsFromAdminEvents(false, params.oldTokenInstance)
         let adminAddresses = [...new Set(
             adminAddAddresses.filter(x => !(new Set(adminRemoveAddresses).has(x)))
@@ -305,6 +322,21 @@ export default class Owner extends Component {
         })
     }
 
+    destroy = (event) => {
+        event.preventDefault()
+        
+        let alert = confirm("Are you sure?")
+        if (alert === true) {
+
+            let khanaTokenInstance = this.props.state.contract.instance
+            let accounts = this.props.state.user.accounts
+
+            khanaTokenInstance.destroy({ from: accounts[0], gas: 500000, gasPrice: this.props.state.web3.toWei(5, 'gwei') }).then((txResult) => {
+                console.log(txResult)
+            })
+        }
+    }
+
     render() {
 
         return (
@@ -343,6 +375,26 @@ export default class Owner extends Component {
                                 required
                             />
                             <Button type="submit" id="burnTokens" marginLeft={8}>Burn</Button>
+                        </form>
+                    </Pane>
+                </Pane>
+
+                {/* v.0.0 JSON upgrade */}
+                <Pane padding={14} marginBottom={16} background="redTint" borderRadius={5} border="default">
+                    <Pane marginBottom={16}>
+                        <Heading size={400}>Temp upgrade</Heading>
+                    </Pane>
+                    <Pane>
+                        <form onSubmit={this.updateOldIpfsFile} id="updateOldIpfsFile">
+                            <TextInputField
+                                label="Latest IPFS hash for old contract audits"
+                                placeholder="..."
+                                htmlFor="updateOldIpfsFile"
+                                type="text"
+                                name="ipfsHash"
+                                required
+                            />
+                            <Button type="submit" id="updateOldIpfsFile" marginLeft={8}>updateOldIpfsFile</Button>
                         </form>
                     </Pane>
                 </Pane>
@@ -394,6 +446,26 @@ export default class Owner extends Component {
                                 <Button type="submit" id="performMigration" marginLeft={8}>Perform migration</Button>
                             </form>
                         </Pane>
+                    </Pane>
+                </Pane>
+
+                {/* Self destruct */}
+                <Pane padding={14} marginBottom={16} background="redTint" borderRadius={5} border="default">
+                    <Pane marginBottom={16}>
+                        <Heading size={400}>Self destruct</Heading>
+                    </Pane>
+                    <Pane>
+                        <form onSubmit={this.destroy} id="destroy">
+                            <TextInputField
+                                label="Address of contract"
+                                placeholder="..."
+                                htmlFor="destroy"
+                                type="text"
+                                name="address"
+                                required
+                            />
+                            <Button type="submit" id="destroy" marginLeft={8}>destroy</Button>
+                        </form>
                     </Pane>
                 </Pane>
             </Pane>

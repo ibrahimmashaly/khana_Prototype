@@ -1,10 +1,11 @@
 import React, { Component } from 'react'
 import Audit from './Audit'
 
-import {endPoints, copy, LogTypes} from '../utils/helpers'
+import { endPoints, copy, LogTypes } from '../utils/helpers'
 import Linkify from 'react-linkify'
-import {isMobileOnly} from 'react-device-detect'
-import {shortenAddress} from '../utils/helpers'
+import { isMobileOnly } from 'react-device-detect'
+import { shortenAddress, legacyTimeConverter } from '../utils/helpers'
+import { getTimeStampFromBlock } from '../utils/getWeb3'
 
 import { Table, Pane, Button, Popover, Position, IconButton, Menu, Text, Heading, Paragraph} from 'evergreen-ui';
 
@@ -19,7 +20,15 @@ class GrantHistoryTx extends Component {
         let newCombinedList = []
 
         for (const tx of this.props.state.contract.combinedLogHistory) {
-            let id = tx.timeStamp + "-" + tx.adminAddress
+            let id
+            if (tx.timeStamp == null) {
+                // For legacy contract
+                let timeStamp = await getTimeStampFromBlock(this.props.state.web3, tx.blockNumber)
+                timeStamp = legacyTimeConverter(timeStamp)
+                id = (timeStamp + tx.adminAddress + tx.awardedTo + tx.amount).toUpperCase()
+            } else {
+                id = tx.timeStamp + "-" + tx.adminAddress
+            }
             switch (tx.type) {
                 case LogTypes.award:
                     let path = auditJson.tokenActivity.awards[id] != null ? 
@@ -34,14 +43,18 @@ class GrantHistoryTx extends Component {
                         console.log("Tx: " + JSON.stringify(tx))
                         break
                     }
-
                     tx.reason = path.reason
                     break
                 case LogTypes.burn:
                     tx.reason = auditJson.tokenActivity.burns[id].reason
                     break
                 case LogTypes.adminAdded:
-                    tx.reason = auditJson.tokenAdmin.addAdmin[id].reason
+                    if (tx.timeStamp != null) {
+                        tx.reason = auditJson.tokenAdmin.addAdmin[id].reason
+                    } else {
+                        tx.reason = "Adding admin"
+                        tx.adminAddress = tx.account
+                    }
                     break
                 case LogTypes.adminRemoved:
                     tx.reason = auditJson.tokenAdmin.removeAdmin[id].reason
