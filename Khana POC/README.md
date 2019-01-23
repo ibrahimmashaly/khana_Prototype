@@ -1,3 +1,5 @@
+##### For the latest updates, see the root [Khana directory](https://github.com/mrdavey/KhanaFramework). This directory is for the Proof of Concept only, which will be deprecated.
+
 # Khana: Proof of Concept
 
 ![PoC interface v.0.2 image](https://raw.githubusercontent.com/mrdavey/KhanaFramework/master/Khana%20POC/KhanaAlpha.png)
