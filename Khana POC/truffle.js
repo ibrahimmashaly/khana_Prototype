@@ -1,3 +1,7 @@
+var HDWalletProvider = require("truffle-hdwallet-provider");
+
+var mnemonic = "INSERT_SECRET";
+
 module.exports = {
   // See <http://truffleframework.com/docs/advanced/configuration>
   // to customize your Truffle configuration!
@@ -9,8 +13,10 @@ module.exports = {
       network_id: "*" // Match any network id
     },
     rinkeby: {
-        host: "127.0.0.1",
-        port: 8545,
+        // host: "127.0.0.1",
+        // port: 8545,
+        provider: () =>
+          new HDWalletProvider(mnemonic, "INSERT_INFURA_API"),
         network_id: 4,
         gasPrice: 10000000000
     }

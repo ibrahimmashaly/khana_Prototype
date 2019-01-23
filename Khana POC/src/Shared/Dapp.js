@@ -4,8 +4,9 @@ import Navigation from './Navigation'
 import UserDashboard from './UserDashboard'
 import Grants from './Grants'
 import GrantHistory from './GrantHistory'
-import Admin from './Admin';
-import TokenShared from './DappTokenShared';
+import Admin from './Admin'
+import Owner from './Owner'
+import TokenShared from './DappTokenShared'
 
 class Dapp extends Component {
 
@@ -56,6 +57,12 @@ class Dapp extends Component {
 
     // Updates loading / status message
     updateLoadingMessage = async (message, description, alertLevel) => {
+        let details = ": " + description
+        if (description !== "" || description !== null) {
+            details = ""
+        }
+        console.log(message + details)
+        
         let appState = this.state.app
         appState.status = message
         appState.detailedStatus = description
@@ -139,6 +146,17 @@ class Dapp extends Component {
                     { /* Admin section */}
                     {this.state.navigation === 3 &&
                         <Admin
+                            state={this.state}
+                            createNotification={this.createNotification}
+                            updateState={this.updateState}
+                            updateStaticState={this.updateStaticState}
+                            updateLoadingMessage={this.updateLoadingMessage}
+                        />
+                    }
+
+                    { /* Owner section */}
+                    {this.state.navigation === 4 &&
+                        <Owner
                             state={this.state}
                             createNotification={this.createNotification}
                             updateState={this.updateState}

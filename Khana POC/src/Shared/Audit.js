@@ -1,5 +1,6 @@
 import { Component } from 'react'
-import ipfs from '../utils/ipfs';
+import ipfs from '../utils/ipfs'
+import { LogTypes, legacyTimeConverter } from '../utils/helpers'
 
 class Audit extends Component {
 
@@ -32,6 +33,9 @@ class Audit extends Component {
      * @param "previousImportedAuditHashes": an array of the IPFS hashes of previous
      * audit files. These are recorded when the system is upgraded and we need to 
      * import previous balances and records.
+     * @param "tokenMigrations": an array of the details of any previous token
+     * migrations, e.g. when a new contract is deployed and old token balances need
+     * to be migrated over.
      * 
      * "tokenActivity": All the transactional records of admins when creating and
      * destroying tokens.
@@ -65,7 +69,9 @@ class Audit extends Component {
                 "emergencyStop": {},
                 "moveFunds": {},
                 "auditChain": [],
-                "previousImportedAuditHashes": []
+                "previousImportedAuditHashes": [],
+                "tokenMigrations": {},
+                "adminMigrations": {}
             },
             "tokenActivity": {
                 "burns": {},
@@ -85,8 +91,11 @@ class Audit extends Component {
     createAndUploadNewAuditFile = async (auditDict) => {
 
         let currentIpfsHash = this.props.state.contract.latestIpfsHash
+
         if (currentIpfsHash != null) {
             auditDict.tokenAdmin.auditChain.unshift(currentIpfsHash)
+            auditDict.khanaInfo.version = this.props.state.app.version
+            auditDict.khanaInfo.tokenSupply = this.props.state.contract.tokenSupply
         }
 
         if (auditDict.tokenAdmin.auditChain.length > 5) {
@@ -122,6 +131,36 @@ class Audit extends Component {
         }
 
         return auditJson
+    }
+
+    tempGetAuditJson = async (ipfsHash) => {
+        let auditJson
+
+        let auditFile = await ipfs.files.cat('/ipfs/' + ipfsHash)
+        auditJson = JSON.parse(auditFile.toString('utf8'))
+
+        return auditJson
+    }
+
+    tempRecordAwards = async (ipfsHash) => {
+        let auditJson = await this.createGenesisAuditJson()
+
+        let oldAwards = await this.tempGetAuditJson(ipfsHash)
+
+        oldAwards.forEach(award => {
+            let newSingleAward = {
+                "toAddress": award.toAddress,
+                "adminAddress": award.fromAddress,
+                "amount": award.amount,
+                "reason": award.reason
+            }
+
+            let time = legacyTimeConverter(award.timeStamp/1000)
+            let id = (time + award.fromAddress + award.toAddress + this.props.state.web3.fromWei(award.amount, 'ether')).toUpperCase()
+            auditJson.tokenActivity.awards[id] = newSingleAward
+        })
+
+        return await this.createAndUploadNewAuditFile(auditJson)
     }
 
     /**
@@ -249,14 +288,166 @@ class Audit extends Component {
         return await this.createAndUploadNewAuditFile(auditHistory)
     }
 
-    recordImportAuditFile = async () => {
-        // import entries from tokenAdmin (add to auditChain)
-        // import entries from tokenActivity
+    /**
+     * @dev Used for migrating previous admins to a new contract
+     * @param timeStamp timeStamp of when this action was taken
+     * @param oldContract The address of the old contract that is being migrated from
+     * @param oldContractVersion The version of the old contract being migrated from
+     * @param previousIpfsHash The previous IPFS hash that had audit records
+     * @param reason The reasons for the migration
+     * @param blockNumber The blockNumber when this action was taken
+     * @return IPFS hash of new audit file.
+    */
+    migrateAdminAccounts = async (timeStamp, oldContract, oldContractVersion, previousIpfsHash, reason, blockNumber) => {
+        let auditFile = await ipfs.files.cat('/ipfs/' + previousIpfsHash)
+        let auditJson = JSON.parse(auditFile.toString('utf8'))
 
-        // update totalTokenSupply
+        let migration = {
+            "oldContract": oldContract,
+            "oldContractVersion": oldContractVersion,
+            "previousIpfsHash": previousIpfsHash,
+            "reason": reason
+        }
+
+        if (auditJson.tokenAdmin.adminMigrations == null) {
+            auditJson.tokenAdmin["adminMigrations"] = {}
+        }
+        auditJson.tokenAdmin.adminMigrations[timeStamp + "-" + this.props.state.user.currentAddress] = migration
+        auditJson.khanaInfo.lastUpgradeBlock = blockNumber
+        auditJson.tokenInfo.tokenName = this.props.state.contract.tokenName
+        auditJson.tokenInfo.tokenSymbol = this.props.state.contract.tokenSymbol
+        auditJson.tokenInfo.tokenAddress = this.props.state.contract.tokenAddress
+        auditJson.tokenInfo.vaultAddress = this.props.state.contract.vaultAddress
+        auditJson.tokenInfo.logicAddress = this.props.state.contract.logicAddress
+
+        return await this.createAndUploadNewAuditFile(auditJson)
+    }
+
+    /**
+     * @dev Used for migrating old token balances to a new contract
+     * @param timeStamp timeStamp of when this action was taken
+     * @param oldContract The address of the old contract that is being migrated from
+     * @param oldContractVersion The version of the old contract being migrated from
+     * @param previousIpfsHash The previous IPFS hash that had audit records
+     * @param reason The reasons for the migration
+     * @param blockNumber The blockNumber when this action was taken
+     * @return IPFS hash of new audit file.
+    */
+    migrateTokenBalances = async (timeStamp, oldContract, oldContractVersion, previousIpfsHash, reason, blockNumber) => {
+        let auditFile = await ipfs.files.cat('/ipfs/' + previousIpfsHash)
+        let auditJson = JSON.parse(auditFile.toString('utf8'))
+
+        // parse if it is version 0.0, 0.1, 0.2 etc
+        // TODO
+
+        
+
+        let migration = {
+            "oldContract": oldContract,
+            "oldContractVersion": oldContractVersion,
+            "previousIpfsHash": previousIpfsHash,
+            "reason": reason
+        }
+
+        if (auditJson.tokenAdmin.tokenMigrations == null) {
+            auditJson.tokenAdmin["tokenMigrations"] = {}
+        }
+        auditJson.tokenAdmin.tokenMigrations[timeStamp + "-" + this.props.state.user.currentAddress] = migration
+        auditJson.khanaInfo.lastUpgradeBlock = blockNumber
+        auditJson.tokenInfo.tokenName = this.props.state.contract.tokenName
+        auditJson.tokenInfo.tokenSymbol = this.props.state.contract.tokenSymbol
+        auditJson.tokenInfo.tokenAddress = this.props.state.contract.tokenAddress
+        auditJson.tokenInfo.vaultAddress = this.props.state.contract.vaultAddress
+        auditJson.tokenInfo.logicAddress = this.props.state.contract.logicAddress
+
+        return await this.createAndUploadNewAuditFile(auditJson)
     }
 
 
+
+
+
+    /**
+     * @dev Used to finalise each transaction that should be properly recorded on the audit logs
+     * @param response The response from the node when the event was emitted
+     * @param ipfsHash The IPFS hash which was used for this tx
+     * @param type The LogTypes enum to determine what action this was
+     * @param message The message to show to the end user when it is completed
+     * @return IPFS hash of new audit file.
+    */
+    finaliseTx = async (response, ipfsHash, type, message) => {
+        let web3 = this.props.state.web3
+        let args = response.args
+
+        let txDict = {
+            ipfsHash: args.ipfsHash,
+            txHash: response.transactionHash,
+            reason: '',
+            blockNumber: response.blockNumber,
+            timeStamp: response.args.timeStamp,
+            type: type
+        }
+
+        switch (type) {
+            case LogTypes.award:
+                txDict["adminAddress"] = args.minter
+                txDict["awardedTo"] = args.awardedTo
+                txDict["amount"] = (web3.fromWei(args.amount, 'ether')).toString(10)
+                break
+            case LogTypes.bulkAward:
+                txDict["bulkCount"] = args.bulkCount.toString(10)
+                txDict["adminAddress"] = args.minter
+                this.props.state.contract.reloadNeeded = true
+                break
+            case LogTypes.burn:
+                txDict["burnFrom"] = args.burnFrom
+                txDict["adminAddress"] = args.adminAddress
+                txDict["amount"] = (web3.fromWei(args.amount, 'ether')).toString(10)
+                break
+            case LogTypes.adminAdded:
+                txDict["account"] = args.account
+                txDict["adminAddress"] = args.adminAddress
+                break
+            case LogTypes.adminRemoved:
+                txDict["account"] = args.account
+                txDict["adminAddress"] = args.adminAddress
+                break
+            case LogTypes.emergencyStop:
+                txDict["activated"] = true
+                txDict["adminAddress"] = args.adminAddress
+                break
+            case LogTypes.emergencyResume:
+                txDict["activated"] = false
+                txDict["adminAddress"] = args.adminAddress
+                break
+            case LogTypes.tokenMigration:
+                txDict["adminAddress"] = args.caller
+                txDict["oldContract"] = args.oldContract
+                txDict["oldContractVersion"] = (web3.fromWei(args.oldVersion, 'ether')).toString(10)
+                this.props.state.contract.reloadNeeded = true
+                break
+            case LogTypes.adminMigration:
+                txDict["adminAddress"] = args.caller
+                txDict["oldContract"] = args.oldContract
+                txDict["oldContractVersion"] = (web3.fromWei(args.oldVersion, 'ether')).toString(10)
+                this.props.state.contract.reloadNeeded = true
+                break
+            default:
+                break
+        }
+
+        this.props.state.contract.reloadNeeded = true
+
+        // Update latest ipfsHash and combinedLogHistory
+        let state = this.props.state
+        state.contract.latestIpfsHash = ipfsHash
+        state.contract.combinedLogHistory.unshift(txDict)
+        state.contract.reloadNeeded = true
+        state.app.isLoading = false
+
+        await this.props.updateStaticState(state)
+        this.props.createNotification('Success!', message, 1);
+    }
 
 
     // loadJson = new Promise(function (resolve, reject) {

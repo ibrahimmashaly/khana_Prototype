@@ -18,9 +18,10 @@ export const LogTypes = {
     adminAdded: "adminAdded",
     adminRemoved: "adminRemoved",
     emergencyStop: "emergencyStop",
-    emergencyResume: "emergencyResume"
+    emergencyResume: "emergencyResume",
+    tokenMigration: "tokenMigration",
+    adminMigration: "adminMigration"
 }
-
 
 //
 // Clipboard operations
@@ -61,11 +62,26 @@ export function copy(object, textToCopy) {
     )
 }
 
+//
+// Other operations
+//
+
 export async function checkForOldSession(lastLoadTimestamp, callback) {
-    // Reload if > 300s (5 min)
-    if (Date.now() - lastLoadTimestamp > 10000) {
-        await callback("Refreshing session", "One moment...")
+    // Reload if > 120s
+    if (Date.now() - lastLoadTimestamp > 120000) {
+        await callback("Refreshing session", "One moment... If this takes more than 10 seconds, try manually reloading this page and trying again.")
     }
+}
+
+export function legacyTimeConverter(UNIX_timestamp) {
+    var a = new Date(UNIX_timestamp * 1000)
+    var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    var year = a.getFullYear()
+    var month = months[a.getMonth()]
+    var date = a.getDate()
+    var hour = a.getHours()
+    var time = date + month + year + hour
+    return time
 }
 
 //

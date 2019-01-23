@@ -1,6 +1,6 @@
 import React, { Component } from 'react'
 import Audit from './Audit'
-import { LogTypes, checkForOldSession } from '../utils/helpers';
+import { LogTypes, checkForOldSession } from '../utils/helpers'
 
 import { Pane, TextInputField, Heading, Button } from 'evergreen-ui'
 
@@ -8,69 +8,6 @@ class Admin extends Component {
     
     refreshIfNeeded = async () => {
         await checkForOldSession(this.props.state.app.lastLoadTimestamp, this.props.updateState)
-    }
-
-    // Used to finalise each transaction that should be properly recorded on the audit logs
-    finaliseTx = async (response, ipfsHash, type, message) => {
-        let web3 = this.props.state.web3
-        let args = response.args
-
-        let txDict = {
-            ipfsHash: args.ipfsHash,
-            txHash: response.transactionHash,
-            reason: '',
-            blockNumber: response.blockNumber,
-            timeStamp: response.args.timeStamp,
-            type: type
-        }
-
-        switch (type) {
-            case LogTypes.award:
-                txDict["adminAddress"] = args.minter
-                txDict["awardedTo"] = args.awardedTo
-                txDict["amount"] = (web3.fromWei(args.amount, 'ether')).toString(10)
-                break
-            case LogTypes.bulkAward:
-                txDict["bulkCount"] = args.bulkCount.toString(10)
-                txDict["adminAddress"] = args.minter
-
-                // Force a reload in Grant History to show new bulk awards
-                this.props.state.contract.reloadNeeded = true
-                break
-            case LogTypes.burn:
-                txDict["burnFrom"] = args.burnFrom
-                txDict["adminAddress"] = args.adminAddress
-                txDict["amount"] = (web3.fromWei(args.amount, 'ether')).toString(10)
-                break
-            case LogTypes.adminAdded:
-                txDict["account"] = args.account
-                txDict["adminAddress"] = args.adminAddress
-                break
-            case LogTypes.adminRemoved:
-                txDict["account"] = args.account
-                txDict["adminAddress"] = args.adminAddress
-                break
-            case LogTypes.emergencyStop:
-                txDict["activated"] = true
-                txDict["adminAddress"] = args.adminAddress
-                break
-            case LogTypes.emergencyResume:
-                txDict["activated"] = false
-                txDict["adminAddress"] = args.adminAddress
-                break
-            default:
-                break
-        }
-
-        // Update latest ipfsHash and combinedLogHistory
-        let state = this.props.state
-        state.contract.latestIpfsHash = ipfsHash
-        state.contract.combinedLogHistory.unshift(txDict)
-        state.contract.reloadNeeded = true
-        state.app.isLoading = false
-
-        await this.props.updateStaticState(state)
-        this.props.createNotification('Success!', message, 1);
     }
 
     awardTokens = async (event) => {
@@ -111,7 +48,7 @@ class Admin extends Component {
                 // This bug is more relevant to dev environment where all recent blocks could be emitting this event, causing bugs.
                 if (response.blockNumber >= txResult.receipt.blockNumber) {
                     let message = "Transaction confirmed and tokens granted. See Grant History for more details."
-                    this.finaliseTx(response, ipfsHash, LogTypes.award, message)
+                    auditInstance.finaliseTx(response, ipfsHash, LogTypes.award, message)
                     awardedEvent.stopWatching()
                     document.getElementById("awardButton").disabled = false
                 }
@@ -149,7 +86,7 @@ class Admin extends Component {
         let khanaTokenInstance = this.props.state.contract.instance
         let accounts = this.props.state.user.accounts
 
-        khanaTokenInstance.awardBulk(addresses, amounts, ipfsHash, timeStamp, { from: accounts[0], gas: 300000, gasPrice: web3.toWei(5, 'gwei') }).then((txResult) => {
+        khanaTokenInstance.awardBulk(addresses, amounts, ipfsHash, timeStamp, { from: accounts[0], gas: 500000, gasPrice: web3.toWei(3, 'gwei') }).then((txResult) => {
 
             this.props.updateLoadingMessage('Waiting for transaction to confirm...')
 
@@ -158,7 +95,7 @@ class Admin extends Component {
                 // Ensure we're not detecting old events in previous (i.e. the current) block. This bug is more relevant to dev environment where all recent blocks could be emitting this event, causing bugs.
                 if (response.blockNumber >= txResult.receipt.blockNumber) {
                     let message = "Transaction confirmed and tokens bulk awarded."
-                    this.finaliseTx(response, ipfsHash, LogTypes.bulkAward, message)
+                    auditInstance.finaliseTx(response, ipfsHash, LogTypes.bulkAward, message)
                     bulkAwardEvent.stopWatching()
                     document.getElementById("bulkAwardButton").disabled = false
                 }
@@ -166,48 +103,6 @@ class Admin extends Component {
         }).catch((error) => {
             this.props.updateState('Bulk awarding error', error.message, 3)
             document.getElementById("bulkAwardButton").disabled = false;
-        })
-    }
-
-    burnTokens = async(event) => {
-        event.preventDefault();
-        document.getElementById("burnTokens").disabled = true;
-
-        let web3 = this.props.state.web3
-
-        // Set variables
-        let address = event.target.address.value
-        let amount = web3.toWei(event.target.amount.value, 'ether')
-        let reason = event.target.reason.value
-
-        await this.refreshIfNeeded()
-
-        // Record the award details on IPFS audit log
-        let auditInstance = new Audit(this.props)
-        let timeStamp = Date.now()
-        let ipfsHash = await auditInstance.recordBurn(timeStamp, address, amount, reason)
-        this.props.updateLoadingMessage('Burn added to IPFS audit file successfully', 'Please confirm the ethereum transaction via your wallet and wait for it to confirm.', 0)
-
-        let khanaTokenInstance = this.props.state.contract.instance
-        let accounts = this.props.state.user.accounts
-
-        khanaTokenInstance.burn(address, amount, ipfsHash, timeStamp, { from: accounts[0], gas: 100000, gasPrice: web3.toWei(5, 'gwei') }).then((txResult) => {
-
-            this.props.updateLoadingMessage('Waiting for transaction to confirm...')
-
-            let burnEvent = khanaTokenInstance.LogBurned({ fromBlock: 'latest' }, (err, response) => {
-
-                // Ensure we're not detecting old events in previous (i.e. the current) block. This bug is more relevant to dev environment where all recent blocks could be emitting this event, causing bugs.
-                if (response.blockNumber >= txResult.receipt.blockNumber) {
-                    let message = "Transaction confirmed and tokens burned."
-                    this.finaliseTx(response, ipfsHash, LogTypes.burn, message)
-                    burnEvent.stopWatching()
-                    document.getElementById("burnTokens").disabled = false
-                }
-            })
-        }).catch((error) => {
-            this.props.updateState('Burning error', error.message, 3)
-            document.getElementById("burnTokens").disabled = false;
         })
     }
 
@@ -253,7 +148,7 @@ class Admin extends Component {
 
             let addedEvent = khanaTokenInstance.LogAdminAdded({ fromBlock: 'latest' }, (err, response) => {
                 let message = "User added as an admin"
-                this.finaliseTx(response, ipfsHash, LogTypes.addAdmin, message)
+                auditInstance.finaliseTx(response, ipfsHash, LogTypes.addAdmin, message)
                 addedEvent.stopWatching()
             })
         }).catch((error) => {
@@ -284,7 +179,7 @@ class Admin extends Component {
 
             let removedEvent = khanaTokenInstance.LogAdminRemoved({ fromBlock: 'latest' }, (err, response) => {
                 let message = "User removed as an admin"
-                this.finaliseTx(response, ipfsHash, LogTypes.removeAdmin, message)
+                auditInstance.finaliseTx(response, ipfsHash, LogTypes.removeAdmin, message)
                 removedEvent.stopWatching()
             })
         }).catch((error) => {
@@ -314,7 +209,7 @@ class Admin extends Component {
 
             let disabledEvent = khanaTokenInstance.LogContractDisabled({ fromBlock: 'latest' }, (err, response) => {
                 let message = "Emergency stop activated"
-                this.finaliseTx(response, ipfsHash, LogTypes.emergencyStop, message)
+                auditInstance.finaliseTx(response, ipfsHash, LogTypes.emergencyStop, message)
                 disabledEvent.stopWatching()
             })
         }).catch((error) => {
@@ -344,7 +239,7 @@ class Admin extends Component {
 
             let enabledEvent = khanaTokenInstance.LogContractEnabled({ fromBlock: 'latest' }, (err, response) => {
                 let message = "Contract re-enabled"
-                this.finaliseTx(response, ipfsHash, LogTypes.emergencyResume, message)
+                auditInstance.finaliseTx(response, ipfsHash, LogTypes.emergencyResume, message)
                 enabledEvent.stopWatching()
             })
         }).catch((error) => {
@@ -507,43 +402,6 @@ class Admin extends Component {
                                 required
                             />
                             <Button type="submit" id="checkAdmin" marginLeft={8}>Check</Button>
-                        </form>
-                    </Pane>
-                </Pane>
-
-                {/* Burn tokens */}
-
-                <Pane padding={14} marginBottom={16} background="redTint" borderRadius={5} border="default">
-                    <Pane marginBottom={16}>
-                        <Heading size={400}>Burn tokens belonging to community members</Heading>
-                    </Pane>
-                    <Pane>
-                        <form onSubmit={this.burnTokens} id="burnTokens">
-                            <TextInputField
-                                label="Member's address"
-                                placeholder="0x...."
-                                htmlFor="burnTokens"
-                                type="text"
-                                name="address"
-                                required
-                            />
-                            <TextInputField
-                                label={"Amount of " + this.props.state.contract.tokenSymbol}
-                                placeholder="0.0"
-                                htmlFor="burnTokens"
-                                type="number"
-                                name="amount"
-                                required
-                            />
-                            <TextInputField
-                                label="Reason for burning"
-                                placeholder="..."
-                                htmlFor="burnTokens"
-                                type="text"
-                                name="reason"
-                                required
-                            />
-                            <Button type="submit" id="burnTokens" marginLeft={8}>Burn</Button>
                         </form>
                     </Pane>
                 </Pane>

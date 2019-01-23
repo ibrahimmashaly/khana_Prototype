@@ -35,3 +35,15 @@ let getWeb3 = new Promise((resolve, reject) => {
 });
 
 export default getWeb3;
+
+export function getTimeStampFromBlock(web3, blockNumber) {
+  return new Promise((resolve, reject) => {
+    web3.eth.getBlock(blockNumber, function(error, result) {
+      if (error == null) {
+        resolve(result.timestamp)
+      } else {
+        reject()
+      }
+    })
+  })
+}
