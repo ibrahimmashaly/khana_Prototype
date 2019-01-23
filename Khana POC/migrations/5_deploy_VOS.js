@@ -1,21 +1,21 @@
-var BlockDamToken = artifacts.require("BlockDamToken");
-var BlockDamBondingCurveFunds = artifacts.require('BlockDamBondingCurveFunds');
+var ShiatsuToken = artifacts.require("ShiatsuToken");
+var ShiatsuBondingCurveFunds = artifacts.require('ShiatsuBondingCurveFunds');
 
 module.exports = function(deployer, network, accounts) {
-    let bcdInstance
-    let bcdBondingFundsInstance
+    let vosInstance
+    let vosBondingFundsInstance
 
-    console.log('  === Deploying BlockDam contracts...')
+    console.log('  === Deploying Shiatsu contracts...')
 
-    deployer.deploy(BlockDamToken).then((result) => {
-        bcdInstance = result
+    deployer.deploy(ShiatsuToken).then((result) => {
+        vosInstance = result
 
-        return deployer.deploy(BlockDamBondingCurveFunds, BlockDamToken.address)
+        return deployer.deploy(ShiatsuBondingCurveFunds, ShiatsuToken.address)
     })
     .then((result) => {
-        bcdBondingFundsInstance = result
+        vosBondingFundsInstance = result
 
-        return bcdInstance.setFundsContract(BlockDamBondingCurveFunds.address, Date.now(), {from: accounts[0]})
+        return vosInstance.setFundsContract(ShiatsuBondingCurveFunds.address, Date.now(), {from: accounts[0]})
     })
     .then((result) => {
 
@@ -24,7 +24,7 @@ module.exports = function(deployer, network, accounts) {
 
         // Truffle calls it 'develop', ganache calls it 'development'
         if (network == 'develop' || network == 'development' || network == 'test') {
-            bcdBondingFundsInstance.sendTransaction({from: accounts[9], value: web3.toWei(amountOfEthToFund, 'ether')}).then((result) => {
+            vosBondingFundsInstance.sendTransaction({from: accounts[9], value: web3.toWei(amountOfEthToFund, 'ether')}).then((result) => {
                 console.log('Funding contract bonding curve...')
                 console.log('  ... funded with ' + amountOfEthToFund + ' ETH successfully')
             }).catch((error) => {

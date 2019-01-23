@@ -7,27 +7,45 @@ export let endPoints = {
     ipfsEndpoint: "https://gateway.ipfs.io/ipfs/"
 }
 
+// 
+// Enums
+//
+
+export const LogTypes = {
+    award: "award",
+    bulkAward: "bulkAward",
+    burn: "burn",
+    adminAdded: "adminAdded",
+    adminRemoved: "adminRemoved",
+    emergencyStop: "emergencyStop",
+    emergencyResume: "emergencyResume",
+    tokenMigration: "tokenMigration",
+    adminMigration: "adminMigration"
+}
 
 //
 // Clipboard operations
 //
 
-export function shortenAddress(address) {
+export function shortenAddress(address, showCopyToClipboard = true) {
     if (address == null) { return null }
     let shortAddress = address.substr(0, 6) + '...' + address.substr(address.length - 4)
 
     return (
-    <CopyToClipboard 
-        text={address}
-        onCopy={() => {
-            notificationNotify('Copied to clipboard!')
-        }}>
-
-        <span>
-            <a href={endPoints.blockExplorer + "address/" + address} target="_blank">{shortAddress}</a>  <Icon icon="clipboard" />
-        </span>
-            
-    </CopyToClipboard >
+        showCopyToClipboard ? (
+            <span>
+            <a href={endPoints.blockExplorer + "address/" + address} target="_blank">{shortAddress}</a>
+            <CopyToClipboard 
+                text={address}
+                onCopy={() => {
+                    notificationNotify('Copied to clipboard!')
+                }}>
+                <Icon icon="clipboard" appearance="minimal" height={24}/>
+            </CopyToClipboard >
+            </span>
+        ) : (
+            <a href={endPoints.blockExplorer + "address/" + address} target="_blank">{shortAddress}</a>
+        )
     )
 }
 
@@ -42,6 +60,28 @@ export function copy(object, textToCopy) {
             {object}
         </CopyToClipboard >
     )
+}
+
+//
+// Other operations
+//
+
+export async function checkForOldSession(lastLoadTimestamp, callback) {
+    // Reload if > 120s
+    if (Date.now() - lastLoadTimestamp > 120000) {
+        await callback("Refreshing session", "One moment... If this takes more than 10 seconds, try manually reloading this page and trying again.")
+    }
+}
+
+export function legacyTimeConverter(UNIX_timestamp) {
+    var a = new Date(UNIX_timestamp * 1000)
+    var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    var year = a.getFullYear()
+    var month = months[a.getMonth()]
+    var date = a.getDate()
+    var hour = a.getHours()
+    var time = date + month + year + hour
+    return time
 }
 
 //

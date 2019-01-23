@@ -1,17 +1,22 @@
 import React, { Component } from 'react'
-import ipfs from '../utils/ipfs';
+import Audit from './Audit'
+import { LogTypes, checkForOldSession } from '../utils/helpers'
 
-import { Pane, TextInputField, Heading, Button } from 'evergreen-ui';
+import { Pane, TextInputField, Heading, Button } from 'evergreen-ui'
 
 class Admin extends Component {
+    
+    refreshIfNeeded = async () => {
+        await checkForOldSession(this.props.state.app.lastLoadTimestamp, this.props.updateState)
+    }
 
-    awardTokens = (event) => {
-        event.preventDefault();
-        document.getElementById("awardButton").disabled = true;
+    awardTokens = async (event) => {
+        event.preventDefault()
+        document.getElementById("awardButton").disabled = true
 
         let web3 = this.props.state.web3
 
-        // Set state
+        // Set variables
         let address = event.target.address.value
         let amount = web3.toWei(event.target.amount.value, 'ether')
         let reason = event.target.reason.value
@@ -21,130 +26,100 @@ class Admin extends Component {
             return
         }
 
-        let getIpfsFile = new Promise((ipfsResult) => {
-            let latestIpfsHash = this.props.state.contract.latestIpfsHash
-            let newContents = { "timeStamp": + Date.now(), "toAddress": address, "fromAddress": this.props.state.user.accounts[0], "amount": amount, "reason": reason }
+        await this.refreshIfNeeded()
 
-            // If there is no existing hash, then we are running for first time and need to create log file on IPFS
-            if (!latestIpfsHash) {
-                let ipfsContent = {
-                    path: '/' + this.props.state.contract.tokenName,
-                    content: Buffer.from('[ ' + JSON.stringify(newContents) + ' ]')
+        // Record the award details on IPFS audit log
+        let auditInstance = new Audit(this.props)
+        let timeStamp = Date.now()
+        let ipfsHash = await auditInstance.recordAward(timeStamp, address, amount, reason)
+        this.props.updateLoadingMessage('Entry added to IPFS audit file successfully', 'Please confirm the ethereum transaction via your wallet and wait for it to confirm.', 0)
+
+        // Make contract changes and attach the IPFS hash permanently to an admin tx record (and to the events log)
+        let khanaTokenInstance = this.props.state.contract.instance
+        let accounts = this.props.state.user.accounts
+
+        khanaTokenInstance.award(address, amount, ipfsHash, timeStamp, { from: accounts[0], gas: 100000, gasPrice: web3.toWei(5, 'gwei') }).then((txResult) => {
+
+            this.props.updateLoadingMessage('Waiting for transaction to confirm...', '', 0)
+
+            let awardedEvent = khanaTokenInstance.LogAwarded({ fromBlock: 'latest' }, (err, response) => {
+
+                // Ensure we're not detecting old events in previous (i.e. the current) block. 
+                // This bug is more relevant to dev environment where all recent blocks could be emitting this event, causing bugs.
+                if (response.blockNumber >= txResult.receipt.blockNumber) {
+                    let message = "Transaction confirmed and tokens granted. See Grant History for more details."
+                    auditInstance.finaliseTx(response, ipfsHash, LogTypes.award, message)
+                    awardedEvent.stopWatching()
+                    document.getElementById("awardButton").disabled = false
                 }
-
-                this.props.updateLoadingMessage('Creating inital IPFS file (may take a while)...')
-
-                // Write description to IPFS, return hash
-                ipfsResult(ipfs.add(ipfsContent))
-            } else {
-                // Get most recent version of logs first
-                ipfs.files.cat('/ipfs/' + this.props.state.contract.latestIpfsHash).then((file) => {
-
-                    // Parse the history as JSON, then add an entry to the start of array
-                    let auditHistory = JSON.parse(file.toString('utf8'))
-                    auditHistory.unshift(newContents)
-
-                    //Set up IPFS details
-                    let ipfsContent = {
-                        path: '/' + this.props.state.contract.tokenName,
-                        content: Buffer.from(JSON.stringify(auditHistory))
-                    }
-
-                    this.props.updateLoadingMessage('Adding details to IPFS file (may take a while)...')
-
-                    // Write description to IPFS, return hash
-                    ipfsResult(ipfs.add(ipfsContent))
-                })
-            }
-        })
-
-        getIpfsFile.then((ipfsResult) => {
-
-            // Then store the recent tx and record on blockchain (and events log)
-            let ipfsHash = ipfsResult[0].hash
-            this.props.updateLoadingMessage('Entry added to IPFS audit file successfully', 'Please confirm the ethereum transaction via your wallet and wait for it to confirm.', 0)
-
-            // Make contract changes
-            let khanaTokenInstance = this.props.state.contract.instance
-            let accounts = this.props.state.user.accounts
-
-            khanaTokenInstance.award(address, amount, ipfsHash, { from: accounts[0], gas: 100000, gasPrice: web3.toWei(5, 'gwei') }).then((txResult) => {
-
-                this.props.updateLoadingMessage('Waiting for transaction to confirm...', '', 0)
-
-                let awardedEvent = khanaTokenInstance.LogAwarded({ fromBlock: 'latest' }, (err, response) => {
-
-                    // Ensure we're not detecting old events in previous (i.e. the current) block. This bug is more relevant to dev environment where all recent blocks could be emitting this event, causing bugs.
-                    if (response.blockNumber >= txResult.receipt.blockNumber) {
-
-                        // Update latest ipfsHash and history
-                        let contractState = this.props.state.contract
-                        contractState.latestIpfsHash = ipfsHash
-                        contractState.ipfsLogHistory.push({
-                            blockNumber: response.blockNumber,
-                            minter: response.args.minter,
-                            awardedTo: response.args.awardedTo,
-                            amount: (web3.fromWei(response.args.amount, 'ether')).toString(10),
-                            ipfsHash: response.args.ipfsHash,
-                            ethTxHash: response.transactionHash
-                        })
-
-                        this.setState({ contract: contractState })
-                        this.props.updateState('Success!', 'Transaction confirmed and tokens granted. See Grant History for more details.', 1);
-
-                        awardedEvent.stopWatching()
-                        document.getElementById("awardButton").disabled = false;
-                    }
-                })
-            }).catch((error) => {
-                this.props.updateState('Awarding error', error.message, 3)
-                document.getElementById("awardButton").disabled = false;
             })
         }).catch((error) => {
-            this.props.updateState('IPFS file error', error.message, 3)
+            this.props.updateState('Awarding error', error.message, 3)
             document.getElementById("awardButton").disabled = false;
         })
     }
 
-    burnTokens = async(event) => {
-        event.preventDefault();
-        document.getElementById("burnTokens").disabled = true;
+    bulkAwardTokens = async (event) => {
+        event.preventDefault()
+        document.getElementById("bulkAwardButton").disabled = true
 
         let web3 = this.props.state.web3
 
-        // Set state
-        let address = event.target.address.value
-        let amount = web3.toWei(event.target.amount.value, 'ether')
+        let addresses = String(event.target.addresses.value).split(',').map(address => address.replace(/\s/g, ""))
+        let amounts = String(event.target.amounts.value).split(',').map(amount => web3.toWei(amount, 'ether'))
+        let reason = event.target.reason.value
+        
+        if (addresses.length === 0 || amounts.length === 0 || reason.length === 0) {
+            this.props.updateState('All details must be filled in to award tokens', '', 2)
+            return
+        }
 
+        await this.refreshIfNeeded()
+
+        // Record the award details on IPFS audit log
+        let auditInstance = new Audit(this.props)
+        let timeStamp = Date.now()
+        let ipfsHash = await auditInstance.recordBulkAward(timeStamp, addresses, amounts, reason)
+        this.props.updateLoadingMessage('Entry added to IPFS audit file successfully', 'Please confirm the ethereum transaction via your wallet and wait for it to confirm.', 0)
+
+        // Make contract changes and attach the IPFS hash permanently to an admin tx record (and to the events log)
         let khanaTokenInstance = this.props.state.contract.instance
         let accounts = this.props.state.user.accounts
 
-        khanaTokenInstance.burn(address, amount, { from: accounts[0], gas: 100000, gasPrice: web3.toWei(5, 'gwei') }).then((txResult) => {
+        khanaTokenInstance.awardBulk(addresses, amounts, ipfsHash, timeStamp, { from: accounts[0], gas: 500000, gasPrice: web3.toWei(3, 'gwei') }).then((txResult) => {
 
             this.props.updateLoadingMessage('Waiting for transaction to confirm...')
 
-            let burnEvent = khanaTokenInstance.LogBurned({ fromBlock: 'latest' }, (err, response) => {
+            let bulkAwardEvent = khanaTokenInstance.LogBulkAwardedSummary({ fromBlock: 'latest' }, (err, response) => {
 
                 // Ensure we're not detecting old events in previous (i.e. the current) block. This bug is more relevant to dev environment where all recent blocks could be emitting this event, causing bugs.
                 if (response.blockNumber >= txResult.receipt.blockNumber) {
-                    this.props.updateState('Success!', 'Transaction confirmed and tokens burned.', 1);
-                    burnEvent.stopWatching()
-                    document.getElementById("burnTokens").disabled = false;
+                    let message = "Transaction confirmed and tokens bulk awarded."
+                    auditInstance.finaliseTx(response, ipfsHash, LogTypes.bulkAward, message)
+                    bulkAwardEvent.stopWatching()
+                    document.getElementById("bulkAwardButton").disabled = false
                 }
             })
         }).catch((error) => {
-            this.props.updateState('Burning error', error.message, 3)
-            document.getElementById("burnTokens").disabled = false;
+            this.props.updateState('Bulk awarding error', error.message, 3)
+            document.getElementById("bulkAwardButton").disabled = false;
         })
     }
 
     checkAdmin = async (event) => {
         event.preventDefault();
+        let adminAddress = event.target.address.value
+
+        await this.refreshIfNeeded()
         this.props.updateLoadingMessage('Checking if address is an admin...')
 
         let khanaTokenInstance = this.props.state.contract.instance
-        khanaTokenInstance.checkIfAdmin(event.target.address.value).then((isAdmin) => {
-            this.props.updateState('User ' + (isAdmin ? 'is ' : 'is not ') + 'an admin', '', (isAdmin ? 1 : 2))
+        khanaTokenInstance.checkIfAdmin(adminAddress).then((isAdmin) => {
+            this.props.createNotification('User ' + (isAdmin ? 'is ' : 'is not ') + 'an admin', '', (isAdmin ? 1 : 2))
+
+            let state = this.props.state
+            state.app.isLoading = false
+            this.props.updateStaticState(state)
         }).catch((error) => {
             this.props.updateState('Admin error', error.message, 2)
         })
@@ -152,16 +127,29 @@ class Admin extends Component {
 
     addAdmin = async (event) => {
         event.preventDefault();
+
+        let address = event.target.address.value
+        let reason = event.target.reason.value
+
+        await this.refreshIfNeeded()
         this.props.updateLoadingMessage('Adding user as an admin...')
+
+        // Record the details on IPFS audit log
+        let auditInstance = new Audit(this.props)
+        let timeStamp = Date.now()
+        let ipfsHash = await auditInstance.recordAddAdmin(timeStamp, address, reason)
+        this.props.updateLoadingMessage('New admin recorded to IPFS audit file successfully', 'Please confirm the ethereum transaction via your wallet and wait for it to confirm.', 0)
 
         let khanaTokenInstance = this.props.state.contract.instance
         let accounts = this.props.state.user.accounts
-        khanaTokenInstance.addAdmin(event.target.address.value, { from: accounts[0], gas: 100000, gasPrice: this.props.state.web3.toWei(5, 'gwei') }).then(() => {
+
+        khanaTokenInstance.addAdmin(address, ipfsHash, timeStamp, { from: accounts[0], gas: 100000, gasPrice: this.props.state.web3.toWei(5, 'gwei') }).then(() => {
             this.props.updateLoadingMessage('Waiting for transaction to confirm')
 
             let addedEvent = khanaTokenInstance.LogAdminAdded({ fromBlock: 'latest' }, (err, response) => {
-                this.props.updateState('Success!', 'User added as an admin', 1);
-                addedEvent.stopWatching();
+                let message = "User added as an admin"
+                auditInstance.finaliseTx(response, ipfsHash, LogTypes.addAdmin, message)
+                addedEvent.stopWatching()
             })
         }).catch((error) => {
             this.props.updateState('Admin error', error.message, 3)
@@ -170,54 +158,89 @@ class Admin extends Component {
 
     removeAdmin = async (event) => {
         event.preventDefault()
+
+        let address = event.target.address.value
+        let reason = event.target.reason.value
+
+        await this.refreshIfNeeded()
         this.props.updateLoadingMessage('Removing user as an admin...')
+
+        // Record the details on IPFS audit log
+        let auditInstance = new Audit(this.props)
+        let timeStamp = Date.now()
+        let ipfsHash = await auditInstance.recordRemoveAdmin(timeStamp, address, reason)
+        this.props.updateLoadingMessage('Remove admin recorded to IPFS audit file successfully', 'Please confirm the ethereum transaction via your wallet and wait for it to confirm.', 0)
 
         let khanaTokenInstance = this.props.state.contract.instance
         let accounts = this.props.state.user.accounts
-        khanaTokenInstance.removeAdmin(event.target.address.value, { from: accounts[0], gas: 100000, gasPrice: this.props.state.web3.toWei(5, 'gwei') }).then(() => {
+
+        khanaTokenInstance.removeAdmin(address, ipfsHash, timeStamp, { from: accounts[0], gas: 100000, gasPrice: this.props.state.web3.toWei(5, 'gwei') }).then(() => {
             this.props.updateLoadingMessage('Waiting for transaction to confirm')
 
             let removedEvent = khanaTokenInstance.LogAdminRemoved({ fromBlock: 'latest' }, (err, response) => {
-                this.props.updateState('Success', 'User removed as an admin', 1);
-                removedEvent.stopWatching();
+                let message = "User removed as an admin"
+                auditInstance.finaliseTx(response, ipfsHash, LogTypes.removeAdmin, message)
+                removedEvent.stopWatching()
             })
         }).catch((error) => {
             this.props.updateState('Admin error', error.message, 3)
         })
     }
 
-    tokenEmergencyStop = async () => {
+    tokenEmergencyStop = async (event) => {
         event.preventDefault();
+
+        let reason = event.target.reason.value
+
+        await this.refreshIfNeeded()
         this.props.updateLoadingMessage('Processing emergency stop...')
+
+        // Record the details on IPFS audit log
+        let auditInstance = new Audit(this.props)
+        let timeStamp = Date.now()
+        let ipfsHash = await auditInstance.recordEmergencyStop(timeStamp, true, reason)
+        this.props.updateLoadingMessage('Emergency stop recorded to IPFS audit file successfully', 'Please confirm the ethereum transaction via your wallet and wait for it to confirm.', 0)
 
         let khanaTokenInstance = this.props.state.contract.instance
         let accounts = this.props.state.user.accounts
 
-        khanaTokenInstance.emergencyStop({ from: accounts[0], gas: 100000, gasPrice: this.props.state.web3.toWei(5, 'gwei') }).then((success) => {
+        khanaTokenInstance.emergencyStop(ipfsHash, timeStamp, { from: accounts[0], gas: 100000, gasPrice: this.props.state.web3.toWei(5, 'gwei') }).then((success) => {
             this.props.updateLoadingMessage('Waiting for transaction to confirm...')
 
             let disabledEvent = khanaTokenInstance.LogContractDisabled({ fromBlock: 'latest' }, (err, response) => {
-                this.props.updateState('Success!', 'Emergency stop activated', 1);
-                disabledEvent.stopWatching();
+                let message = "Emergency stop activated"
+                auditInstance.finaliseTx(response, ipfsHash, LogTypes.emergencyStop, message)
+                disabledEvent.stopWatching()
             })
         }).catch((error) => {
             this.props.updateState('Admin error', error.message, 3)
         })
     }
 
-    tokenResumeContract = async () => {
+    tokenResumeContract = async (event) => {
         event.preventDefault();
-        this.props.updateLoadingMessage('Re-enabling token minting...')
+
+        let reason = event.target.reason.value
+
+        await this.refreshIfNeeded()
+        this.props.updateLoadingMessage('Re-enabling contracts...')
+
+        // Record the details on IPFS audit log
+        let auditInstance = new Audit(this.props)
+        let timeStamp = Date.now()
+        let ipfsHash = await auditInstance.recordEmergencyStop(timeStamp, false, reason)
+        this.props.updateLoadingMessage('Re-enabling recorded to IPFS audit file successfully', 'Please confirm the ethereum transaction via your wallet and wait for it to confirm.', 0)
 
         let khanaTokenInstance = this.props.state.contract.instance
         let accounts = this.props.state.user.accounts
 
-        khanaTokenInstance.resumeContract({ from: accounts[0], gas: 100000, gasPrice: this.props.state.web3.toWei(5, 'gwei') }).then((success) => {
+        khanaTokenInstance.resumeContract(ipfsHash, timeStamp, { from: accounts[0], gas: 100000, gasPrice: this.props.state.web3.toWei(5, 'gwei') }).then((success) => {
             this.props.updateLoadingMessage('Waiting for transaction to confirm...')
 
             let enabledEvent = khanaTokenInstance.LogContractEnabled({ fromBlock: 'latest' }, (err, response) => {
-                this.props.updateState('Success!', 'Contract re-enabled', 1);
-                enabledEvent.stopWatching();
+                let message = "Contract re-enabled"
+                auditInstance.finaliseTx(response, ipfsHash, LogTypes.emergencyResume, message)
+                enabledEvent.stopWatching()
             })
         }).catch((error) => {
             this.props.updateState('Admin error', error.message, 3)
@@ -225,12 +248,19 @@ class Admin extends Component {
     }
 
     render() {
+
+        let contractEnabled = this.props.state.contract.contractEnabled
+        let emergencyStopId = contractEnabled ? "tokenEmergencyStop" : "tokenResumeContract"
+
         return (
 
             <Pane padding={8} flex="1">
+
+                {/* award individual tokens */}
+
                 <Pane padding={14} marginBottom={16} background="greenTint" borderRadius={5} border="default">
                     <Pane marginBottom={16}>
-                        <Heading size={400}>Grant tokens to community members</Heading>
+                        <Heading size={400}>Grant tokens to a community member</Heading>
                     </Pane>
                     <Pane>
                         <form onSubmit={this.awardTokens} id="awardTokens">
@@ -240,6 +270,7 @@ class Admin extends Component {
                                 htmlFor="awardTokens"
                                 type="text"
                                 name="address"
+                                required
                             />
                             <TextInputField
                                 label={"Amount of " + this.props.state.contract.tokenSymbol}
@@ -247,6 +278,7 @@ class Admin extends Component {
                                 htmlFor="awardTokens"
                                 type="number"
                                 name="amount"
+                                required
                             />
                             <TextInputField
                                 label="Reason for granting"
@@ -254,11 +286,52 @@ class Admin extends Component {
                                 htmlFor="awardTokens"
                                 type="text"
                                 name="reason"
+                                required
                             />
                             <Button type="submit" id="awardButton" marginLeft={8}>Grant</Button>
                         </form>
                     </Pane>
                 </Pane>
+
+                {/* bulk award tokens */}
+
+                <Pane padding={14} marginBottom={16} background="greenTint" borderRadius={5} border="default">
+                    <Pane marginBottom={16}>
+                        <Heading size={400}>Bulk grant tokens to community members</Heading>
+                    </Pane>
+                    <Pane>
+                        <form onSubmit={this.bulkAwardTokens} id="bulkAwardTokens">
+                            <TextInputField
+                                label="Member addresses"
+                                description="Each address must be comma separated"
+                                placeholder="0xAddress1, 0xAddress2, 0xAddress3..."
+                                htmlFor="bulkAwardTokens"
+                                type="text"
+                                name="addresses"
+                                required
+                            />
+                            <TextInputField
+                                label={"Amount of " + this.props.state.contract.tokenSymbol}
+                                placeholder="0.0"
+                                htmlFor="bulkAwardTokens"
+                                type="number"
+                                name="amounts"
+                                required
+                            />
+                            <TextInputField
+                                label="Reason for bulk granting"
+                                placeholder="..."
+                                htmlFor="bulkAwardTokens"
+                                type="text"
+                                name="reason"
+                                required
+                            />
+                            <Button type="submit" id="bulkAwardButton" marginLeft={8}>Bulk Grant</Button>
+                        </form>
+                    </Pane>
+                </Pane>
+
+                {/* Add new admin */}
 
                 <Pane padding={14} marginBottom={16} background="tint1" borderRadius={5} border="default">
                     <Pane marginBottom={16}>
@@ -272,17 +345,21 @@ class Admin extends Component {
                                 htmlFor="addAdmin"
                                 type="text"
                                 name="address"
+                                required
                             />
                             <TextInputField
-                                label="Reason for adding (optional)"
+                                label="Reason for adding"
                                 placeholder="..."
                                 htmlFor="addAdmin"
                                 type="text"
                                 name="reason"
+                                required
                             />
                             <Button type="submit" id="addAdmin" marginLeft={8}>Add</Button>
                         </form>
                     </Pane>
+
+                    {/* Remove admin */}
 
                     <Pane marginBottom={16} marginTop={32}>
                         <Heading size={400}>Remove an admin</Heading>
@@ -295,17 +372,21 @@ class Admin extends Component {
                                 htmlFor="removeAdmin"
                                 type="text"
                                 name="address"
+                                required
                             />
                             <TextInputField
-                                label="Reason for removing (optional)"
+                                label="Reason for removing"
                                 placeholder="..."
                                 htmlFor="removeAdmin"
                                 type="text"
                                 name="reason"
+                                required
                             />
                             <Button type="submit" id="removeAdmin" marginLeft={8}>Remove</Button>
                         </form>
                     </Pane>
+
+                    {/* Check if admin */}
 
                     <Pane marginBottom={16} marginTop={32}>
                         <Heading size={400}>Check if admin</Heading>
@@ -318,53 +399,32 @@ class Admin extends Component {
                                 htmlFor="checkAdmin"
                                 type="text"
                                 name="address"
+                                required
                             />
                             <Button type="submit" id="checkAdmin" marginLeft={8}>Check</Button>
                         </form>
                     </Pane>
                 </Pane>
 
-                <Pane padding={14} marginBottom={16} background="redTint" borderRadius={5} border="default">
-                    <Pane marginBottom={16}>
-                        <Heading size={400}>Burn tokens belonging to community members</Heading>
-                    </Pane>
-                    <Pane>
-                        <form onSubmit={this.burnTokens} id="burnTokens">
-                            <TextInputField
-                                label="Member's address"
-                                placeholder="0x...."
-                                htmlFor="burnTokens"
-                                type="text"
-                                name="address"
-                            />
-                            <TextInputField
-                                label={"Amount of " + this.props.state.contract.tokenSymbol}
-                                placeholder="0.0"
-                                htmlFor="burnTokens"
-                                type="number"
-                                name="amount"
-                            />
-                            <TextInputField
-                                label="Reason for burning"
-                                placeholder="..."
-                                htmlFor="burnTokens"
-                                type="text"
-                                name="reason"
-                            />
-                            <Button type="submit" id="burnTokens" marginLeft={8}>Burn</Button>
-                        </form>
-                    </Pane>
-                </Pane>
+                {/* Emergency stop operations */}
 
                 <Pane padding={14} marginBottom={16} background="redTint" borderRadius={5} border="default">
                     <Pane marginBottom={16}>
                         <Heading size={400}>Stop or Enable contract operations</Heading>
                     </Pane>
-                    {this.props.state.contract.contractEnabled ? (
-                        <Button intent="danger" iconBefore="ban-circle" onClick={this.tokenEmergencyStop}> Activate Emergency Stop </Button>
-                    ) : (
-                        <Button intent="warning" iconBefore="warning-sign" onClick={this.tokenResumeContract}> Re-enable Contract </Button>
-                        )}
+                    <form onSubmit={contractEnabled ? this.tokenEmergencyStop : this.tokenResumeContract} id={emergencyStopId}>
+                        <TextInputField
+                            label={contractEnabled ? "Reason for activation" : "Reason for re-enabling"}
+                            placeholder="..."
+                            htmlFor={emergencyStopId}
+                            type="text"
+                            name="reason"
+                            required
+                        />
+                        <Button intent={contractEnabled ? "danger" : "warning"} iconBefore={contractEnabled ? "ban-circle" : "warning-sign"} type="submit" id={emergencyStopId} marginLeft={8}>
+                            {contractEnabled ? "Activate Emergency Stop" : "Re-enable Contract"}
+                        </Button>
+                    </form>
                 </Pane>
             </Pane>
         )

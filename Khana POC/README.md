@@ -1,3 +1,5 @@
+##### For the latest updates, see the root [Khana directory](https://github.com/mrdavey/KhanaFramework). This directory is for the Proof of Concept only, which will be deprecated.
+
 # Khana: Proof of Concept
 
 ![PoC interface v.0.2 image](https://raw.githubusercontent.com/mrdavey/KhanaFramework/master/Khana%20POC/KhanaAlpha.png)
@@ -88,6 +90,7 @@ Navigate to the project directory and in terminal: `truffle test`
 * The main token contract is [here](https://github.com/mrdavey/KhanaFramework/blob/master/Khana%20POC/contracts/KhanaToken.sol)
 * The funds contract is [here](https://github.com/mrdavey/KhanaFramework/blob/master/Khana%20POC/contracts/BondingCurveFunds.sol)
 * The simple bonding curve calculation is [here](https://github.com/mrdavey/KhanaFramework/blob/03a96a0a5d9535c53daf961e745d760e5e08c9ca/Khana%20POC/contracts/KhanaToken.sol#L198)
+* Simple spreadsheet simulation of dynamic bonding curve design (v.0.2) [here](https://docs.google.com/spreadsheets/d/13cCYamLOC_reqUdpD3AdQnBUWoH9S0aQijUzcmxDEGo/edit?usp=sharing)
 * IPFS file creation/modification/upload is done via the front end in [App.js](https://github.com/mrdavey/KhanaFramework/blob/master/Khana%20POC/src/App.js). Discussion of why this works [here](https://github.com/mrdavey/KhanaFramework/blob/master/Khana%20POC/design_pattern_desicions.md#storage-of-audit-records-in-ipfs).
 * Discussion of dynamic token bonding curves to be implemented [here](https://medium.com/@mrdavey/dynamic-token-bonding-curves-41d36e43befa)
 

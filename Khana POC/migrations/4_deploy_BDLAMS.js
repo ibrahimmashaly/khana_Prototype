@@ -1,21 +1,21 @@
-var BlockDamToken = artifacts.require("BlockDamToken");
-var BlockDamBondingCurveFunds = artifacts.require('BlockDamBondingCurveFunds');
+var BuidlAmsToken = artifacts.require("BuidlAmsToken");
+var BuidlAmsBondingCurveFunds = artifacts.require('BuidlAmsBondingCurveFunds');
 
 module.exports = function(deployer, network, accounts) {
-    let bcdInstance
-    let bcdBondingFundsInstance
+    let bdlInstance
+    let bdlBondingFundsInstance
 
-    console.log('  === Deploying BlockDam contracts...')
+    console.log('  === Deploying BuidlAms contracts...')
 
-    deployer.deploy(BlockDamToken).then((result) => {
-        bcdInstance = result
+    deployer.deploy(BuidlAmsToken).then((result) => {
+        bdlInstance = result
 
-        return deployer.deploy(BlockDamBondingCurveFunds, BlockDamToken.address)
+        return deployer.deploy(BuidlAmsBondingCurveFunds, BuidlAmsToken.address)
     })
     .then((result) => {
-        bcdBondingFundsInstance = result
+        bdlBondingFundsInstance = result
 
-        return bcdInstance.setFundsContract(BlockDamBondingCurveFunds.address, Date.now(), {from: accounts[0]})
+        return bdlInstance.setFundsContract(BuidlAmsBondingCurveFunds.address, Date.now(), {from: accounts[0]})
     })
     .then((result) => {
 
@@ -24,7 +24,7 @@ module.exports = function(deployer, network, accounts) {
 
         // Truffle calls it 'develop', ganache calls it 'development'
         if (network == 'develop' || network == 'development' || network == 'test') {
-            bcdBondingFundsInstance.sendTransaction({from: accounts[9], value: web3.toWei(amountOfEthToFund, 'ether')}).then((result) => {
+            bdlBondingFundsInstance.sendTransaction({from: accounts[9], value: web3.toWei(amountOfEthToFund, 'ether')}).then((result) => {
                 console.log('Funding contract bonding curve...')
                 console.log('  ... funded with ' + amountOfEthToFund + ' ETH successfully')
             }).catch((error) => {

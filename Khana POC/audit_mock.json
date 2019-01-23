@@ -1,0 +1,249 @@
+{
+    "khanaInfo" : {
+        "version" : 0.1,
+        "lastUpgradeBlock" : 0
+    },
+    "tokenInfo" : {
+        "tokenName" : "BlockDam",
+        "tokenSymbol" : "BCD",
+        "tokenSupply" : "1600",
+        "tokenAddress" : "0x788a378e7f82e36b3719644e042102d68bf597c7",
+        "vaultAddress" : "0x5c5d2c96f62b41ebd4ca420884146b33ba3d75c7",
+        "logicAddress" : "0x788a378e7f82e36b3719644e042102d68bf597c7"
+    },
+    "tokenAdmin" : {
+        "addAdmin" : [
+            {
+                "timeStamp": 1540929958416,
+                "toAddress": "0x5Bb492d019A1bF669b9018bA4dBB95113515f3a7",
+                "adminAddress": "0x19a9dc5c38febcdc61893df3a3c00ff484d0991b",
+                "reason": "Promoted to admin"
+            }
+        ],
+        "removeAdmin": [
+            {
+                "timeStamp": 1540929958416,
+                "toAddress": "0x5Bb492d019A1bF669b9018bA4dBB95113515f3a7",
+                "adminAddress": "0x19a9dc5c38febcdc61893df3a3c00ff484d0991b",
+                "reason": "Demoted from admin"
+            }
+        ],
+        "emergencyStop" : [
+            {
+                "timeStamp": 1540929958416,
+                "adminAddress": "0x19a9dc5c38febcdc61893df3a3c00ff484d0991b",
+                "isActivated": true,
+                "reason": "Test emergency stop"
+            },
+            {
+                "timeStamp": 1540929958416,
+                "adminAddress": "0x19a9dc5c38febcdc61893df3a3c00ff484d0991b",
+                "isActivated": false,
+                "reason": "Test emergency de-activation"
+            }
+        ],
+        "moveFunds" : [
+            {
+                "timeStamp": 1540929958416,
+                "toAddress": "0x5Bb492d019A1bF669b9018bA4dBB95113515f3a7",
+                "adminAddress": "0x19a9dc5c38febcdc61893df3a3c00ff484d0991b",
+                "amount": "30000000000000000000",
+                "reason": "Move funds for community runway purposes as per DAO decision #1337"
+            }
+        ],
+        "auditChain": [
+            "Qma2oNQemkS6fQwG64NfSwDGQpmxYknx2waFNK4fUeE13V",
+            "QmT25RScJJ2Hj5qaGZEkw6fthqZRKiqq2d7BgASDXQ2GPb",
+            "QmUTKZjeiabibtMMwcZwckPcQZ5c1Vz3iqW6nkcYMUwwFv",
+            "QmaZPSXDHbWaRc64iGDkXYxp3j94pyb4B1hDGV9XQAnf1e",
+            "QmNSXKhMBjtijEdX6Lgk4C3ePtMdeeuQrpeHQg16h4X5T3"
+        ],
+        "previousImportedAuditHashes": [
+            "Qma2oNQemkS6fQwG64NfSwDGQpmxYknx2waFNK4fUeE13V",
+            "QmT25RScJJ2Hj5qaGZEkw6fthqZRKiqq2d7BgASDXQ2GPb",
+            "QmUTKZjeiabibtMMwcZwckPcQZ5c1Vz3iqW6nkcYMUwwFv",
+            "QmaZPSXDHbWaRc64iGDkXYxp3j94pyb4B1hDGV9XQAnf1e",
+            "QmNSXKhMBjtijEdX6Lgk4C3ePtMdeeuQrpeHQg16h4X5T3"
+        ]
+    },
+    "tokenActivity" : {
+        "burns": [
+            {
+                "timeStamp": 1540929958416,
+                "toAddress": "0x5Bb492d019A1bF669b9018bA4dBB95113515f3a7",
+                "adminAddress": "0x19a9dc5c38febcdc61893df3a3c00ff484d0991b",
+                "amount": "30000000000000000000",
+                "reason": "Example burn"
+            }
+        ],
+        "awardsBulk": [
+            {
+                "timeStamp": 1540929958416,
+                "toAddress": [
+                    "0x5Bb492d019A1bF669b9018bA4dBB95113515f3a7", 
+                    "0xc353F5b658D7Fa97384BFD6f200ddf3E572b5216"
+                ],
+                "adminAddress": "0x19a9dc5c38febcdc61893df3a3c00ff484d0991b",
+                "sameAmount": true,
+                "amountEach": ["30000000000000000000"],
+                "reason": "Attending meetup"
+            },
+            {
+                "timeStamp": 1540929958416,
+                "toAddress": [
+                    "0x5Bb492d019A1bF669b9018bA4dBB95113515f3a7",
+                    "0xc353F5b658D7Fa97384BFD6f200ddf3E572b5216"
+                ],
+                "adminAddress": "0x19a9dc5c38febcdc61893df3a3c00ff484d0991b",
+                "sameAmount": false,
+                "amountEach": [
+                    "30000000000000000000",
+                    "60000000000000000000"
+                ],
+                "reason": "Attending meetup with different participations"
+            }
+        ],
+        "awards": [
+            {
+                "timeStamp": 1540929958416,
+                "toAddress": "0x5Bb492d019A1bF669b9018bA4dBB95113515f3a7",
+                "adminAddress": "0x19a9dc5c38febcdc61893df3a3c00ff484d0991b",
+                "amount": "30000000000000000000",
+                "reason": "Top10 - Bounty-Proposals"
+            },
+            {
+                "timeStamp": 1540929881674,
+                "toAddress": "0xc353F5b658D7Fa97384BFD6f200ddf3E572b5216",
+                "adminAddress": "0x19a9dc5c38febcdc61893df3a3c00ff484d0991b",
+                "amount": "10000000000000000000",
+                "reason": "Top10 - Bounty-Proposal"
+            },
+            {
+                "timeStamp": 1540929778325,
+                "toAddress": "0x54677c691534989Fe12a706376b1147775bd7Aa8",
+                "adminAddress": "0x19a9dc5c38febcdc61893df3a3c00ff484d0991b",
+                "amount": "20000000000000000000",
+                "reason": "Top10 - Bounty-Proposals"
+            },
+            {
+                "timeStamp": 1540929725750,
+                "toAddress": "0x5e167580480a1a2bab6a9a487feb83e93c4a85ca",
+                "adminAddress": "0x19a9dc5c38febcdc61893df3a3c00ff484d0991b",
+                "amount": "20000000000000000000",
+                "reason": "Top10 - Bounty-Proposals"
+            },
+            {
+                "timeStamp": 1540929657159,
+                "toAddress": "0x01a099f4707AcD8c69B4FD2FFf8012Bc092c1A32",
+                "adminAddress": "0x19a9dc5c38febcdc61893df3a3c00ff484d0991b",
+                "amount": "10000000000000000000",
+                "reason": "Top10 - Bounty-Proposal"
+            },
+            {
+                "timeStamp": 1540929508004,
+                "toAddress": "0xe357F44DeD7E09699ed03dB15C51be199fC1E23A",
+                "adminAddress": "0x19a9dc5c38febcdc61893df3a3c00ff484d0991b",
+                "amount": "10000000000000000000",
+                "reason": "Top10 - Bounty-Proposal"
+            },
+            {
+                "timeStamp": 1539066507424,
+                "toAddress": "0x54677c691534989Fe12a706376b1147775bd7Aa8",
+                "adminAddress": "0x19a9dc5c38febcdc61893df3a3c00ff484d0991b",
+                "amount": "100000000000000000000",
+                "reason": "Genesis Minting - Henk"
+            },
+            {
+                "timeStamp": 1537436148165,
+                "toAddress": "0x0A8035C9b89Bc515aB6D5Edcb1f3be9880ffaA5A",
+                "adminAddress": "0xda04482fa9dc5094cdcb52dfdbffe220af9e2d61",
+                "amount": "100000000000000000000",
+                "reason": "Genesis minting -Kirsten"
+            },
+            {
+                "timeStamp": 1537287210118,
+                "toAddress": "0x4efb415d1271c940e1aeb16f2af98f2ffb3a1b1e",
+                "adminAddress": "0xda04482fa9dc5094cdcb52dfdbffe220af9e2d61",
+                "amount": "100000000000000000000",
+                "reason": "bartwr"
+            },
+            {
+                "timeStamp": 1537282357993,
+                "toAddress": "0xf42BFA32e74f97EdF185785A54CD7B4F69424CeB",
+                "adminAddress": "0xda04482fa9dc5094cdcb52dfdbffe220af9e2d61",
+                "amount": "100000000000000000000",
+                "reason": "Genesis minting - The Fork"
+            },
+            {
+                "timeStamp": 1537276974430,
+                "toAddress": "0xc353F5b658D7Fa97384BFD6f200ddf3E572b5216",
+                "adminAddress": "0xda04482fa9dc5094cdcb52dfdbffe220af9e2d61",
+                "amount": "100000000000000000000",
+                "reason": "Genesis minting - Barty"
+            },
+            {
+                "timeStamp": 1537276327889,
+                "toAddress": "0xd46C4274Eb9Ed129f8DA0E751DA78a120fE98e26",
+                "adminAddress": "0xda04482fa9dc5094cdcb52dfdbffe220af9e2d61",
+                "amount": "100000000000000000000",
+                "reason": "Genesis minting - Aris"
+            },
+            {
+                "timeStamp": 1537276259698,
+                "toAddress": "0x9D138f301F8A7cc8B724aA6256668fFa4B915b87",
+                "adminAddress": "0xda04482fa9dc5094cdcb52dfdbffe220af9e2d61",
+                "amount": "100000000000000000000",
+                "reason": "Genesis minting - liga"
+            },
+            {
+                "timeStamp": 1537276139944,
+                "toAddress": "0x0b27e340eb4142a24feb538f7b531a7e0f2720dc",
+                "adminAddress": "0xda04482fa9dc5094cdcb52dfdbffe220af9e2d61",
+                "amount": "100000000000000000000",
+                "reason": "Genesis minting - Adriana"
+            },
+            {
+                "timeStamp": 1537275969242,
+                "toAddress": "0x01a099f4707AcD8c69B4FD2FFf8012Bc092c1A32",
+                "adminAddress": "0xda04482fa9dc5094cdcb52dfdbffe220af9e2d61",
+                "amount": "100000000000000000000",
+                "reason": "Genesis minting - Hansie"
+            },
+            {
+                "timeStamp": 1537275934103,
+                "toAddress": "0xde15d7af3b05f443de6fcdb20996aeba4416f0ef",
+                "adminAddress": "0xda04482fa9dc5094cdcb52dfdbffe220af9e2d61",
+                "amount": "100000000000000000000",
+                "reason": "Genesis minting - Maarten"
+            },
+            {
+                "timeStamp": 1537275890877,
+                "toAddress": "0x5Bb492d019A1bF669b9018bA4dBB95113515f3a7",
+                "adminAddress": "0xda04482fa9dc5094cdcb52dfdbffe220af9e2d61",
+                "amount": "100000000000000000000",
+                "reason": "Genesis minting - Bert"
+            },
+            {
+                "timeStamp": 1537275857412,
+                "toAddress": "0x5e167580480a1a2bab6a9a487feb83e93c4a85ca",
+                "adminAddress": "0xda04482fa9dc5094cdcb52dfdbffe220af9e2d61",
+                "amount": "100000000000000000000",
+                "reason": "Genesis minting - Bart"
+            },
+            {
+                "timeStamp": 1537275808797,
+                "toAddress": "0xB32aF4ED36f5AC4844eE2E4189b537B71dD7A722",
+                "adminAddress": "0xda04482fa9dc5094cdcb52dfdbffe220af9e2d61",
+                "amount": "100000000000000000000",
+                "reason": "Genesis minting - John van Meer - de Bitcoin Consultant"
+            },
+            {
+                "timeStamp": 1537275560327,
+                "toAddress": "0x1e17a75616cd74f5846b1b71622aa8e10ea26cc0",
+                "adminAddress": "0xda04482fa9dc5094cdcb52dfdbffe220af9e2d61",
+                "amount": "100000000000000000000",
+                "reason": "Genesis minting - Pablo Cryptobar"
+            }
+        ]
+    }
+}

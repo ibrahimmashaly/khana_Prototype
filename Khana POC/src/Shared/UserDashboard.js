@@ -3,7 +3,6 @@ import {shortenAddress} from '../utils/helpers';
 
 import { Pane, Heading, Text, TextInputField, Button, Alert } from 'evergreen-ui';
 
-
 class UserDashboard extends Component {
 
     sellTokens = async (event) => {
@@ -46,6 +45,7 @@ class UserDashboard extends Component {
 
     render() {
         let portionOfSupply = ((this.props.state.user.tokenBalance / this.props.state.contract.totalSupply) * 100).toFixed(2)
+        let isLoading = this.props.state.app.isLoading
 
         return (
             <Pane padding={8} flex="1">
@@ -66,7 +66,7 @@ class UserDashboard extends Component {
                         <Heading size={400}>My Information</Heading>
                     </Pane>
                     <Pane>
-                        {this.props.state.app.isLoading ? (
+                        {isLoading ? (
                             <Text>Loading information...</Text>
                         ) : (
                             <Text>
@@ -81,7 +81,7 @@ class UserDashboard extends Component {
                         <Heading size={400}>Token Information</Heading>
                     </Pane>
                     <Pane>
-                        {this.props.state.app.isLoading ? (
+                        {isLoading ? (
                             <Text>Loading information...</Text>
                         ) : (
                                 <Text>
@@ -99,7 +99,7 @@ class UserDashboard extends Component {
                         <Heading size={400}>Bonding Curve Information</Heading>
                     </Pane>
                     <Pane>
-                        {this.props.state.app.isLoading ? (
+                        {isLoading ? (
                             <Text>Loading information...</Text>
                         ) : (
                             <Pane>
@@ -108,9 +108,8 @@ class UserDashboard extends Component {
                                     Amount in bonding curve: {((this.props.state.contract.ethAmount) * 1).toFixed(4)} ETH
                                 </Text>
                                 <p></p>
-                                <Text>Sell your tokens to the bonding curve below</Text>
-                                
-                                <form onSubmit={this.sellTokens} id="sell-tokens">
+                                <Text>Sell your tokens to the bonding curve below</Text>                                
+                                    <form onSubmit={this.sellTokens} id="sell-tokens">
                                     <Pane flex={1} alignItems="baseline" display="flex">
                                         <TextInputField
                                             label=""
