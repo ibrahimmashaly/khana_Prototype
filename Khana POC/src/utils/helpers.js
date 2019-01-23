@@ -67,9 +67,9 @@ export function copy(object, textToCopy) {
 //
 
 export async function checkForOldSession(lastLoadTimestamp, callback) {
-    // Reload if > 10s
-    if (Date.now() - lastLoadTimestamp > 10000) {
-        await callback("Refreshing session", "One moment...")
+    // Reload if > 120s
+    if (Date.now() - lastLoadTimestamp > 120000) {
+        await callback("Refreshing session", "One moment... If this takes more than 10 seconds, try manually reloading this page and trying again.")
     }
 }
 

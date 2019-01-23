@@ -86,7 +86,7 @@ class Admin extends Component {
         let khanaTokenInstance = this.props.state.contract.instance
         let accounts = this.props.state.user.accounts
 
-        khanaTokenInstance.awardBulk(addresses, amounts, ipfsHash, timeStamp, { from: accounts[0], gas: 300000, gasPrice: web3.toWei(5, 'gwei') }).then((txResult) => {
+        khanaTokenInstance.awardBulk(addresses, amounts, ipfsHash, timeStamp, { from: accounts[0], gas: 500000, gasPrice: web3.toWei(3, 'gwei') }).then((txResult) => {
 
             this.props.updateLoadingMessage('Waiting for transaction to confirm...')
 
