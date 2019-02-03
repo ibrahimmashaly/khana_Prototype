@@ -1,13 +1,13 @@
 pragma solidity ^0.5.0;
 
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
-import "../Interfaces/IERC20Token.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/ERC20Mintable.sol";
 
 contract BondedVault is Ownable {
 
     address public authorisedSender;
     bool public collateralIsEth;
-    IERC20Token public collateralToken;
+    ERC20Mintable public collateralToken;
     bool public isFrozen;
 
     event LogCollateralSend(
