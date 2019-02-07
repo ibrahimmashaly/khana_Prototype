@@ -3,8 +3,11 @@ var HDWalletProvider = require("truffle-hdwallet-provider");
 var mnemonic = "INSERT_SECRET";
 
 module.exports = {
-  // See <http://truffleframework.com/docs/advanced/configuration>
-  // to customize your Truffle configuration!
+  compilers: {
+    solc: {
+      version: "^0.4.24"
+    }
+  },
 
   networks: {
     development: {
