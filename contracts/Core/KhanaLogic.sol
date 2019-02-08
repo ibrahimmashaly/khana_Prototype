@@ -9,12 +9,16 @@ import "../Interfaces/ICommunityRegister.sol";
 contract KhanaLogic is IKhanaLogic, Ownable {
     ICommunityRegister communityRegister;
 
-    constructor(address _communityRegisterAddress) public {
-        setCommunityRegister(_communityRegisterAddress);
+    modifier onlyAdmins() {
+        require(communityRegister.isAdmin(msg.sender), "Only admins can perform this action");
+        _;
     }
 
-    function setCommunityRegister(address _communityRegister) public onlyOwner {
-        // do checks
+    constructor(address _communityRegisterAddress) public {
+        communityRegister = ICommunityRegister(_communityRegisterAddress);
+    }
+
+    function setCommunityRegister(address _communityRegister) public onlyAdmins {
         communityRegister = ICommunityRegister(_communityRegister);
     }
 
