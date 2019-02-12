@@ -12,8 +12,8 @@ contract CommunityToken is ERC20Mintable, Ownable {
 
     IKhanaLogic public khanaLogic;
 
-    constructor(address _khanaLogicAddresss) public {
-        setKhanaLogic(_khanaLogicAddresss);
+    constructor(address _khanaLogicAddress) public {
+        khanaLogic = IKhanaLogic(_khanaLogicAddress);
     }
 
     /**
@@ -23,7 +23,7 @@ contract CommunityToken is ERC20Mintable, Ownable {
      * but expand the usecase slightly with more admins with mint permissions.
      */
     modifier hasMintPermission() {
-        require(khanaLogic.isAdmin(msg.sender) == true, "Only admins can perform this action");
+        require(khanaLogic.isAdmin(msg.sender), "Only admins can perform this action");
         _;
     }
 

@@ -2,32 +2,32 @@ pragma solidity ^0.5.0;
 
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 
-import "../Interfaces/ICommunityRegister.sol";
+import "../Interfaces/IKhanaLogic.sol";
 
 
 contract CommunityEvents is Ownable {
     
-    ICommunityRegister public communityRegister;
+    IKhanaLogic public khanaLogic;
     address public newerEventsContract;
 
     /**
      * @dev Throws if called by a non-admin account.
      */
     modifier onlyAdmins() {
-        require(communityRegister.isAdmin(msg.sender), "Only admins can perform this action");
+        require(khanaLogic.isAdmin(msg.sender), "Only admins can perform this action");
         _;
     }
 
-    constructor(address _communityRegisterAddress) public {
-        communityRegister = ICommunityRegister(_communityRegisterAddress);
+    constructor(address _khanaLogicAddress) public {
+        khanaLogic = IKhanaLogic(_khanaLogicAddress);
     }
 
     /**
-     * @dev Set valid communityRegister address which has the relevant community info.
-     * @param _communityRegister The address of the new communityRegister.
+     * @dev Set valid khanaLogic address.
+     * @param _khanaLogic The address of the new communityRegister.
      */
-    function setCommunityRegister(address _communityRegister) external onlyAdmins returns (bool) {
-        communityRegister = ICommunityRegister(_communityRegister);
+    function setKhanaLogic(address _khanaLogic) external onlyAdmins returns (bool) {
+        khanaLogic = IKhanaLogic(_khanaLogic);
         return true;
     }
 
