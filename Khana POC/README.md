@@ -1,4 +1,4 @@
-##### For the latest updates, see the root [Khana directory](https://github.com/mrdavey/KhanaFramework). This directory is for the Proof of Concept only, which will be deprecated.
+##### For the latest updates, see the main [Khana repo](https://github.com/khana-io). This directory is for the Proof of Concept only, which will be deprecated.
 
 # Khana: Proof of Concept
 
