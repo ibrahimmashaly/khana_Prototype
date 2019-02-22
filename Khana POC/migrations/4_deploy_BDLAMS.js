@@ -24,7 +24,7 @@ module.exports = function(deployer, network, accounts) {
 
         // Truffle calls it 'develop', ganache calls it 'development'
         if (network == 'develop' || network == 'development' || network == 'test') {
-            bdlBondingFundsInstance.sendTransaction({from: accounts[9], value: web3.toWei(amountOfEthToFund, 'ether')}).then((result) => {
+            bdlBondingFundsInstance.sendTransaction({ from: accounts[9], value: web3.utils.toWei(amountOfEthToFund, 'ether')}).then((result) => {
                 console.log('Funding contract bonding curve...')
                 console.log('  ... funded with ' + amountOfEthToFund + ' ETH successfully')
             }).catch((error) => {
