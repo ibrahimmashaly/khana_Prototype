@@ -4,6 +4,7 @@ import Khana from './Communities/Khana';
 import BlockDam from './Communities/BlockDam';
 import BuidlAms from './Communities/BuidlAms';
 import Shiatsu from './Communities/Shiatsu';
+import BlockchainTalks from './Communities/BlockchainTalks';
 
 const KhanaComponent = () => (
     <Khana />
@@ -21,6 +22,8 @@ const ShiatsuComponent = () => (
     <Shiatsu />
 )
 
+const BlockchainTalksComponent = () => <BlockchainTalks />;
+
 const BasicRoute = () => (
     <Router basename="/dapp">
         <div>
@@ -28,6 +31,7 @@ const BasicRoute = () => (
         <Route path='/blockdam' component={BlockDamComponent} />
         <Route path='/buidlams' component={BuidlAmsComponent} />
         <Route path='/shiatsu' component={ShiatsuComponent} />
+        <Route path='/bct' component={BlockchainTalksComponent} />
         </div>
     </Router>
 );

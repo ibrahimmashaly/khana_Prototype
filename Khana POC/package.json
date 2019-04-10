@@ -66,7 +66,8 @@
     "react-modal": "^3.6.1",
     "react-router-dom": "^4.3.1",
     "react-scripts": "^1.1.5",
-    "truffle-hdwallet-provider": "0.0.6",
+    "truffle": "^5.0.12",
+    "truffle-hdwallet-provider": "^1.0.6",
     "uglify-es": "^3.3.9"
   },
   "scripts": {
