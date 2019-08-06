@@ -1,5 +1,5 @@
 import React from 'react'
-import { BrowserRouter as Router, Route } from "react-router-dom";
+import { HashRouter, Route } from "react-router-dom";
 import Khana from './Communities/Khana';
 import BlockDam from './Communities/BlockDam';
 import BuidlAms from './Communities/BuidlAms';
@@ -25,17 +25,17 @@ const ShiatsuComponent = () => (
 const BlockchainTalksComponent = () => <BlockchainTalks />;
 
 const BasicRoute = () => (
-    <Router basename="/dapp">
-        <div>
-        <Route exact path='/' component={KhanaComponent} />
-        <Route path='/blockdam' component={BlockDamComponent} />
-        <Route path='/buidlams' component={BuidlAmsComponent} />
-        <Route path='/shiatsu' component={ShiatsuComponent} />
-        <Route path='/bct' component={BlockchainTalksComponent} />
-        </div>
-    </Router>
+	<HashRouter basename="/dapp">
+		<div>
+			<Route exact path="/" component={KhanaComponent} />
+			<Route path="/blockdam" component={BlockDamComponent} />
+			<Route path="/buidlams" component={BuidlAmsComponent} />
+			<Route path="/shiatsu" component={ShiatsuComponent} />
+			<Route path="/bct" component={BlockchainTalksComponent} />
+		</div>
+	</HashRouter>
 );
 
 export default BasicRoute;
 
-// Remember to create .htaccess file: https://stackoverflow.com/a/38827810/4769084
+// Remember to create .htaccess file: https://stackoverflow.com/a/38827810/4769084 if not hosting on Github Pages
