@@ -7,7 +7,7 @@ import React, { Component } from 'react'
 class App extends Component {
 
     // Update this value so we don't have to transverse the entire blockchain to find events
-    contractDeployBlockNumber = 3009494 // KHNA on Rinkeby
+    contractDeployBlockNumber = 0 //3009494 // KHNA on Rinkeby
     grantsUrl = "https://github.com/mrdavey/KhanaFramework/projects/1"
 
     render() {

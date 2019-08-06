@@ -5,6 +5,7 @@ import UserDashboard from './UserDashboard'
 import Grants from './Grants'
 import GrantHistory from './GrantHistory'
 import Admin from './Admin'
+import PoA from "./PoA";
 import Owner from './Owner'
 import TokenShared from './DappTokenShared'
 
@@ -102,72 +103,82 @@ class Dapp extends Component {
         const isLoadingFirstTime = this.state.app.isLoading && this.state.user == null
 
         return (
-            <div>
+          <div>
             {isLoadingFirstTime ? (
-                <div> Current loading... </div>
+              <div> Current loading... </div>
             ) : (
-                <div className="App">
-                    <Navigation
-                        state={this.state}
-                        updateStaticState={this.updateStaticState}
-                    />
+              <div className="App">
+                <Navigation
+                  state={this.state}
+                  updateStaticState={this.updateStaticState}
+                />
 
-                    { /* User dashboard section */}
-                    {this.state.navigation === 0 &&
-                        <UserDashboard
-                            state={this.state}
-                            updateStaticState={this.updateStaticState}
-                            updateState={this.updateState}
-                            updateLoadingMessage={this.updateLoadingMessage}
-                        />
-                    }
+                {/* User dashboard section */}
+                {this.state.navigation === 0 && (
+                  <UserDashboard
+                    state={this.state}
+                    updateStaticState={this.updateStaticState}
+                    updateState={this.updateState}
+                    updateLoadingMessage={this.updateLoadingMessage}
+                  />
+                )}
 
-                    { /* Grants section */}
-                    {this.state.navigation === 1 &&
-                        <Grants
-                            state={this.state}
-                            updateStaticState={this.updateStaticState}
-                            updateState={this.updateState}
-                            updateLoadingMessage={this.updateLoadingMessage}
-                            grantsUrl={this.props.grantsUrl}
-                        />
-                    }
+                {/* Grants section */}
+                {this.state.navigation === 1 && (
+                  <Grants
+                    state={this.state}
+                    updateStaticState={this.updateStaticState}
+                    updateState={this.updateState}
+                    updateLoadingMessage={this.updateLoadingMessage}
+                    grantsUrl={this.props.grantsUrl}
+                  />
+                )}
 
-                     { /* Grant History section */}
-                    {this.state.navigation === 2 &&
-                        <GrantHistory
-                            state={this.state}
-                            updateLoadingMessage={this.updateLoadingMessage}
-                            updateStaticState={this.updateStaticState}
-                            updateState={this.updateState}
-                        />
-                    }
+                {/* Grant History section */}
+                {this.state.navigation === 2 && (
+                  <GrantHistory
+                    state={this.state}
+                    updateLoadingMessage={this.updateLoadingMessage}
+                    updateStaticState={this.updateStaticState}
+                    updateState={this.updateState}
+                  />
+                )}
 
-                    { /* Admin section */}
-                    {this.state.navigation === 3 &&
-                        <Admin
-                            state={this.state}
-                            createNotification={this.createNotification}
-                            updateState={this.updateState}
-                            updateStaticState={this.updateStaticState}
-                            updateLoadingMessage={this.updateLoadingMessage}
-                        />
-                    }
+                {/* Admin section */}
+                {this.state.navigation === 3 && (
+                  <Admin
+                    state={this.state}
+                    createNotification={this.createNotification}
+                    updateState={this.updateState}
+                    updateStaticState={this.updateStaticState}
+                    updateLoadingMessage={this.updateLoadingMessage}
+                  />
+                )}
 
-                    { /* Owner section */}
-                    {this.state.navigation === 4 &&
-                        <Owner
-                            state={this.state}
-                            createNotification={this.createNotification}
-                            updateState={this.updateState}
-                            updateStaticState={this.updateStaticState}
-                            updateLoadingMessage={this.updateLoadingMessage}
-                        />
-                    }
-                    
-                </div >
-            ) }
-            </div>
+                {/* PoA section */}
+                {this.state.navigation === 4 && (
+                  <PoA
+                    state={this.state}
+                    createNotification={this.createNotification}
+                    updateState={this.updateState}
+                    updateStaticState={this.updateStaticState}
+                    updateLoadingMessage={this.updateLoadingMessage}
+                  />
+                )}
+
+                {/* Owner section */}
+                {this.state.navigation === 5 && (
+                  <Owner
+                    state={this.state}
+                    createNotification={this.createNotification}
+                    updateState={this.updateState}
+                    updateStaticState={this.updateStaticState}
+                    updateLoadingMessage={this.updateLoadingMessage}
+                  />
+                )}
+              </div>
+            )}
+          </div>
         );
     }
 }

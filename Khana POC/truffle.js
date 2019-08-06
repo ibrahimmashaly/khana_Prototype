@@ -1,6 +1,6 @@
 var HDWalletProvider = require("truffle-hdwallet-provider");
 
-var mnemonic = "INSERT_SECRET";
+var mnemonic = "SECRET_CODE";
 
 module.exports = {
   compilers: {
@@ -16,12 +16,10 @@ module.exports = {
       network_id: "*" // Match any network id
     },
     rinkeby: {
-        // host: "127.0.0.1",
-        // port: 8545,
-        provider: () =>
-          new HDWalletProvider(mnemonic, "INSERT_INFURA_API"),
-        network_id: 4,
-        gasPrice: 10000000000
+      provider: () => new HDWalletProvider(mnemonic, "https://rinkeby.infura.io/v3/INFURA_ID"),
+      network_id: 4,
+      gas: 7000000,
+      skipDryRun: true,
     }
   },
 

@@ -37,7 +37,7 @@ A basic simulation of token dynamics can be found here: https://goo.gl/jeJkV5
 
 # How to use the alpha
 1. Download a wallet app such as Coinbase Wallet or Status
-2. Use the dApp browser and go to: http://khana.io/app/
+2. Use the dApp browser and go to: https://khana-io.github.io/dapp/#/
 3. Tweet at @daveytea to receive some KHNA tokens!
 4. Explore the app (features are quite limited at the moment...)
 
@@ -91,7 +91,7 @@ Navigate to the project directory and in terminal: `truffle test`
 * The funds contract is [here](https://github.com/mrdavey/KhanaFramework/blob/master/Khana%20POC/contracts/BondingCurveFunds.sol)
 * The simple bonding curve calculation is [here](https://github.com/mrdavey/KhanaFramework/blob/03a96a0a5d9535c53daf961e745d760e5e08c9ca/Khana%20POC/contracts/KhanaToken.sol#L198)
 * Simple spreadsheet simulation of dynamic bonding curve design (v.0.2) [here](https://docs.google.com/spreadsheets/d/13cCYamLOC_reqUdpD3AdQnBUWoH9S0aQijUzcmxDEGo/edit?usp=sharing)
-* IPFS file creation/modification/upload is done via the front end in [App.js](https://github.com/mrdavey/KhanaFramework/blob/master/Khana%20POC/src/App.js). Discussion of why this works [here](https://github.com/mrdavey/KhanaFramework/blob/master/Khana%20POC/design_pattern_desicions.md#storage-of-audit-records-in-ipfs).
+* IPFS file creation/modification/upload is done via the front end in [App.js](https://github.com/mrdavey/KhanaFramework/blob/master/Khana%20POC/src/dapp.js). Discussion of why this works [here](https://github.com/mrdavey/KhanaFramework/blob/master/Khana%20POC/design_pattern_desicions.md#storage-of-audit-records-in-ipfs).
 * Discussion of dynamic token bonding curves to be implemented [here](https://medium.com/@mrdavey/dynamic-token-bonding-curves-41d36e43befa)
 
 
@@ -103,7 +103,7 @@ Navigate to the project directory and in terminal: `truffle test`
 ### KhanaToken Rinkeby
 This is the proof of concept, used for testing, showing the concept, and bootstrapping Khana with Khana.
 
-[Basic front end](http://khana.io/app/) - requires either Metamask or viewing via Web3 compatible app (Status / Coinbase wallet)
+[Basic front end](https://khana-io.github.io/dapp/#/) - requires either Metamask or viewing via Web3 compatible app (Status / Coinbase wallet)
 
 [KhanaToken contract](https://rinkeby.etherscan.io/address/0xafcb7969c32e213ab5482c972f151154c1a73f77)
 
@@ -112,7 +112,7 @@ This is the proof of concept, used for testing, showing the concept, and bootstr
 ### BlockDam Token Rinkeby
 This is a pilot project for the [BlockDam commmunity](https://www.meetup.com/Permissionless-Society/), based in Amsterdam.
 
-[Basic front end](http://khana.io/app/blockdam) - requires either Metamask or viewing via Web3 compatible app (Status / Coinbase wallet)
+[Basic front end](https://khana-io.github.io/dapp/#/blockdam) - requires either Metamask or viewing via Web3 compatible app (Status / Coinbase wallet)
 
 [BlockDam contract](https://rinkeby.etherscan.io/address/0xafcb7969c32e213ab5482c972f151154c1a73f77)
 

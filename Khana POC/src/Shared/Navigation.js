@@ -81,7 +81,7 @@ class Navigation extends Component {
                     </Modal>
 
                     <Pane>
-                        <Heading size={100}>Khana v.0.2: 📈 <strong>{this.props.state.contract.tokenName} ({this.props.state.contract.tokenSymbol})</strong></Heading>
+                        <Heading size={100}>Khana v.0.21: 📈 <strong>{this.props.state.contract.tokenName} ({this.props.state.contract.tokenSymbol})</strong></Heading>
                     </Pane>
                 </Pane>
                 <Tablist marginBottom={8} flexBasis={240} marginRight={24}>
@@ -91,9 +91,12 @@ class Navigation extends Component {
                     {this.props.state.user.isAdmin &&
                         this.createTab('Admin', 3)
                     }
+                    {this.props.state.user.isAdmin &&
+                        this.createTab('PoA', 4)
+                    }
 
                     {this.props.state.user.isOwner &&
-                        this.createTab('Owner', 4)
+                        this.createTab('Owner', 5)
                     }
                 </Tablist>
             </Pane>
